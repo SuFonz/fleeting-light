@@ -1,0 +1,8 @@
+// Windows resources for Fleeting Light.
+//
+// The icon id must match FL_IDI_APP in src/platform/win/app_resources.h.
+// windres resolves "app.ico" relative to this file's directory, so the relative
+// path works no matter which directory CMake invokes the compiler from.
+#define FL_IDI_APP 101
+
+FL_IDI_APP ICON "app.ico"

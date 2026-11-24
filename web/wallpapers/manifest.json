@@ -1,0 +1,37 @@
+[
+  {
+    "id": "aurora",
+    "name": "极光",
+    "description": "流动的极光帘幕与星尘"
+  },
+  {
+    "id": "flow",
+    "name": "流光",
+    "description": "粒子沿矢量场游走的丝线"
+  },
+  {
+    "id": "starfield",
+    "name": "星野",
+    "description": "穿越星海的粒子流"
+  },
+  {
+    "id": "neon",
+    "name": "霓虹",
+    "description": "赛博日落与透视网格"
+  },
+  {
+    "id": "mist",
+    "name": "雾山",
+    "description": "晨雾中层叠的山脊"
+  },
+  {
+    "id": "bokeh",
+    "name": "光斑",
+    "description": "缓慢漂浮的散景光球"
+  },
+  {
+    "id": "matrix",
+    "name": "数字雨",
+    "description": "经典绿色字符流"
+  }
+]

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Fleeting Light · 设置</title>
+    <link rel="stylesheet" href="./settings.css" />
+    <script src="../shared/bridge.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark"></span>
+        <span class="brand-name">Fleeting Light</span>
+        <span class="brand-version" id="versionLabel"></span>
+      </div>
+      <div class="topbar-right">
+        <span class="status" id="statusPill"><span class="status-dot"></span><span id="statusText">连接中…</span></span>
+        <button class="ghost" id="pauseButton" type="button">暂停</button>
+      </div>
+    </header>
+
+    <div class="shell">
+      <nav class="sidenav" id="sidenav">
+        <button class="nav-item active" data-pane="wallpaper" type="button">壁纸</button>
+        <button class="nav-item" data-pane="params" type="button">参数</button>
+        <button class="nav-item" data-pane="behavior" type="button">行为</button>
+        <button class="nav-item" data-pane="about" type="button">关于</button>
+      </nav>
+
+      <main class="content">
+        <section class="pane active" id="pane-wallpaper">
+          <div class="pane-head">
+            <h1>壁纸</h1>
+            <div class="add-wrap">
+              <button class="ghost" id="addWallpaperButton" type="button">＋ 添加壁纸</button>
+              <div class="menu" id="addWallpaperMenu" hidden>
+                <button type="button" data-kind="file">导入 HTML 文件…</button>
+                <button type="button" data-kind="folder">导入文件夹（构建产物）…</button>
+              </div>
+            </div>
+          </div>
+          <div class="rule"></div>
+
+          <div class="wp-group">
+            <h2 class="group-title">内置壁纸</h2>
+            <div class="wp-list" id="builtinList"></div>
+          </div>
+
+          <div class="wp-group" id="userGroup" hidden>
+            <h2 class="group-title">我的壁纸</h2>
+            <div class="wp-list" id="userList"></div>
+          </div>
+
+          <p class="note">
+            导入的壁纸放在 <code id="userDirHint">…</code>，单文件 HTML 建议把 CSS/JS 内联，文件夹需要根目录下有
+            <code>index.html</code>。
+          </p>
+        </section>
+
+        <section class="pane" id="pane-params">
+          <h1>渲染</h1>
+          <div class="rule"></div>
+
+          <div class="row">
+            <div class="row-label">
+              帧率上限
+              <span class="hint">不限 = 跟随显示器刷新率</span>
+            </div>
+            <div class="segmented" id="fpsGroup">
+              <button type="button" data-fps="30">30</button>
+              <button type="button" data-fps="60">60</button>
+              <button type="button" data-fps="120">120</button>
+              <button type="button" data-fps="0">不限</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="row-label inline">流动速度<span class="value" id="speedValue">1.0×</span></div>
+            <input type="range" id="speedRange" min="0.2" max="2.5" step="0.1" value="1" />
+          </div>
+
+          <div class="row">
+            <div class="row-label inline">画面强度<span class="value" id="intensityValue">1.0</span></div>
+            <input type="range" id="intensityRange" min="0.3" max="1.8" step="0.1" value="1" />
+          </div>
+
+          <div class="row">
+            <div class="row-label">
+              元素密度
+              <span class="hint">粒子 / 光斑 / 字符列的数量</span>
+            </div>
+            <div class="row-side">
+              <span class="value" id="densityValue">1.0</span>
+              <input type="range" id="densityRange" min="0.3" max="1.8" step="0.1" value="1" />
+            </div>
+          </div>
+
+          <p class="note">三个参数对所有壁纸生效，改动立即应用并写入 config.json。</p>
+        </section>
+
+        <section class="pane" id="pane-behavior">
+          <h1>省电</h1>
+          <div class="rule"></div>
+
+          <div class="row">
+            <div class="row-label">
+              全屏应用时暂停
+              <span class="hint">检测到全屏游戏/视频时停止渲染</span>
+            </div>
+            <button class="switch" id="pauseOnFullscreen" type="button" role="switch" aria-checked="true"></button>
+          </div>
+
+          <div class="row">
+            <div class="row-label">
+              锁屏时暂停
+              <span class="hint">息屏 / 锁屏后释放 GPU</span>
+            </div>
+            <button class="switch" id="pauseOnLock" type="button" role="switch" aria-checked="true"></button>
+          </div>
+
+          <div class="row">
+            <div class="row-label">
+              打开设置面板时暂停
+              <span class="hint">默认关闭，仅降低帧率</span>
+            </div>
+            <button class="switch" id="pauseWhenSettingsOpen" type="button" role="switch" aria-checked="false"></button>
+          </div>
+
+          <h1 class="gap">启动</h1>
+          <div class="rule"></div>
+
+          <div class="row">
+            <div class="row-label">
+              开机自启
+              <span class="hint">登录时自动启动，写入 HKCU\Software\Microsoft\Windows\CurrentVersion\Run</span>
+            </div>
+            <button class="switch" id="startWithWindows" type="button" role="switch" aria-checked="false"></button>
+          </div>
+
+          <div class="row">
+            <div class="row-label">
+              启用开发者工具
+              <span class="hint">下次创建视图时生效</span>
+            </div>
+            <button class="switch" id="devTools" type="button" role="switch" aria-checked="false"></button>
+          </div>
+        </section>
+
+        <section class="pane" id="pane-about">
+          <h1>运行信息</h1>
+          <div class="rule"></div>
+          <dl class="info" id="infoList"></dl>
+
+          <h1 class="gap">操作</h1>
+          <div class="rule"></div>
+          <div class="row">
+            <div class="row-label">壁纸开发者工具<span class="hint">调试当前壁纸页面</span></div>
+            <button class="ghost" id="devtoolsButton" type="button">打开</button>
+          </div>
+          <p class="note">
+            壁纸页面与设置面板共用一套桥接接口：<code>bridge.send(json)</code> / <code>bridge.onMessage(cb)</code>。
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <footer class="bottombar">
+      <button class="ghost" id="resetButton" type="button">恢复默认</button>
+      <button class="ghost" id="reloadButton" type="button">重启壁纸</button>
+      <button class="ghost" id="dataDirButton" type="button">打开配置目录</button>
+      <span class="spacer"></span>
+      <button class="ghost danger" id="quitButton" type="button">退出程序</button>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+    <script type="module" src="./settings.js"></script>
+  </body>
+</html>
