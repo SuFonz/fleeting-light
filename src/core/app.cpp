@@ -1,6 +1,7 @@
 #include "core/app.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "core/log.h"
 #include "core/platform_env.h"
@@ -357,6 +358,33 @@ void App::reload_wallpaper() {
   wallpaper_->navigate(wallpaper_url());
   push_wallpaper_init();
   log_info("已重新加载壁纸");
+}
+
+// ---------------------------------------------------------------- 桌面互动
+
+bool App::wallpaper_interaction_enabled() const {
+  return started_ && wallpaper_ != nullptr && !state_paused_ && config_.pointer_tracking();
+}
+
+void App::on_pointer(float x, float y, bool inside, bool down) {
+  if (!wallpaper_interaction_enabled()) return;
+
+  // 光标没怎么动、按键状态也没变，就不发消息，省得每秒几十条无意义消息
+  const bool moved = std::fabs(x - pointer_x_) > 0.0015f || std::fabs(y - pointer_y_) > 0.0015f;
+  if (!moved && down == pointer_down_ && inside == pointer_inside_) return;
+
+  pointer_x_ = x;
+  pointer_y_ = y;
+  pointer_inside_ = inside;
+  pointer_down_ = down;
+
+  Json msg = Json::object();
+  msg["type"] = "pointer";
+  msg["x"] = static_cast<double>(x);
+  msg["y"] = static_cast<double>(y);
+  msg["inside"] = inside;
+  msg["down"] = down;
+  wallpaper_->send(msg.dump());
 }
 
 void App::switch_wallpaper(std::string ref) {

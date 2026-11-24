@@ -39,6 +39,7 @@ class ConfigCenter {
   bool pause_when_settings_open() const;
   bool dev_tools() const;
   bool start_with_windows() const;
+  bool pointer_tracking() const;
 
   void set_user_paused(bool paused);
   void set_wallpaper_id(std::string id);

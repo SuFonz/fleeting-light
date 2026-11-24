@@ -45,8 +45,11 @@ flowchart TD
 - Tray menu (open panel / pause / reload wallpaper / devtools / autostart / config folder / quit)
 - Single instance: launching again just raises the existing settings panel
 - Rebuilds the wallpaper view automatically after an Explorer restart (`TaskbarCreated`)
-- 7 built-in demo wallpapers: Aurora, Flow, Starfield, Neon, Mist, Bokeh, Matrix (pure Canvas 2D,
-  no external assets)
+- 10 built-in demo wallpapers: Aurora, Ripple, Spotlight, Swarm, Flow, Starfield, Neon, Mist,
+  Bokeh, Matrix (pure Canvas 2D, no external assets)
+- **Interactive wallpapers**: the cursor position (and left button) is streamed to the page, so
+  wallpapers can react to the mouse — Ripple spawns water rings, Spotlight follows the cursor,
+  Swarm is a particle galaxy that bursts on click
 - **Import your own wallpaper**: a single HTML file, or a whole web folder (Vite/Webpack build
   output); the list is grouped into "Built-in" and "My wallpapers"
 
@@ -159,7 +162,8 @@ node .cache/tools/cdp-eval.mjs settings "document.title"  # evaluate JS inside a
     "pauseOnFullscreen": true,
     "pauseOnLock": true,
     "pauseWhenSettingsOpen": false,
-    "devTools": false
+    "devTools": false,
+    "pointerTracking": true
   }
 }
 ```
@@ -173,6 +177,8 @@ node .cache/tools/cdp-eval.mjs settings "document.title"  # evaluate JS inside a
   - `density`: element density, 0.3–1.8 (particle / bokeh / column counts, each wallpaper
     interprets it)
 - `app.pauseWhenSettingsOpen`: pause while the panel is open (by default it only drops to 30 fps)
+- `app.pointerTracking`: stream the cursor position to the wallpaper (turn off to save a little
+  CPU; interactive wallpapers stop reacting)
 
 ## Project layout
 
@@ -208,7 +214,7 @@ web/
   shared/wallpaper-runtime.js wallpaper runtime: canvas, DPR, frame cap, pause
   shared/wallpaper.css
   wallpapers/manifest.json   wallpaper list (the settings panel renders from it)
-  wallpapers/aurora|flow|starfield|neon|mist|bokeh|matrix/
+  wallpapers/aurora|ripple|spotlight|swarm|flow|starfield|neon|mist|bokeh|matrix/
   settings/index.html|settings.css|settings.js   panel: Wallpapers / Params / Behavior / About
 tools/
   gen_webview2_uuids.cmake   generate __CRT_UUID_DECL specializations from WebView2.h
@@ -226,8 +232,13 @@ tools/
 | `{"type":"init","config":{…},"state":{…},"wallpaperId":"aurora","fps":60,"version":"0.1.0"}` | full state after load/reload |
 | `{"type":"config","config":{…}}` | configuration changed |
 | `{"type":"state","paused":false,"reason":"","settingsOpen":false,"userPaused":false}` | pause state |
+| `{"type":"pointer","x":0.51,"y":0.32,"inside":true,"down":false}` | cursor position, normalized to the wallpaper view (0..1), plus left-button state |
 
 `reason` is one of `user` / `fullscreen` / `lock` / `suspend` / `settings`.
+
+The `pointer` message is only sent while `app.pointerTracking` is on, and only when the position
+actually changed (≈50 Hz polling, deduplicated). `bootWallpaper` stores it in `state.pointer` and
+calls the wallpaper's optional `onPointer(pointer)` hook.
 
 ### Wallpaper → core
 
@@ -296,6 +307,8 @@ What happens on import:
         draw(now, dt, elapsed) { /* per frame */ },
         resize({ width, height, dpr }) {},
         setParams(next) {},
+        // optional: react to the cursor (x/y are 0..1 of the view)
+        onPointer({ x, y, down, inside }) {},
       };
     },
   });
@@ -305,8 +318,8 @@ What happens on import:
 3. Register `id` / `name` / `description` in `web/wallpapers/manifest.json`
 4. Select it in the settings panel — no restart needed
 
-`bootWallpaper` already handles DPR, resize, the frame cap and pause/resume; when `state.paused`
-is true it stops requesting animation frames.
+`bootWallpaper` already handles DPR, resize, the frame cap, pause/resume and pointer delivery;
+when `state.paused` is true it stops requesting animation frames.
 
 ## Design decisions and gotchas
 

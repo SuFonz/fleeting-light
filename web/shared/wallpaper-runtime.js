@@ -24,6 +24,8 @@ export function bootWallpaper(definition) {
     width: 0,
     height: 0,
     dpr: 1,
+    // 桌面互动：光标位置（归一化 0..1，相对壁纸视图），inside/down 表示在窗口内/左键按下
+    pointer: { x: 0.5, y: 0.5, inside: false, down: false },
   };
 
   let renderer = null;
@@ -186,6 +188,17 @@ export function bootWallpaper(definition) {
         applyPause(!!message.paused);
         break;
       }
+      case 'pointer': {
+        state.pointer = {
+          x: Number.isFinite(message.x) ? message.x : state.pointer.x,
+          y: Number.isFinite(message.y) ? message.y : state.pointer.y,
+          inside: message.inside !== false,
+          down: message.down === true,
+        };
+        window.__flPointer = state.pointer;
+        if (renderer && renderer.onPointer) renderer.onPointer(state.pointer);
+        break;
+      }
       default:
         break;
     }
@@ -202,6 +215,8 @@ export function bootWallpaper(definition) {
       dpr: state.dpr,
       params: state.params,
       report,
+      // 壁纸可以在 draw() 里随时读当前光标位置
+      getPointer: () => state.pointer,
     });
 
     window.addEventListener('resize', () => {

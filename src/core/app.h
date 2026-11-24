@@ -85,6 +85,10 @@ class App {
   void import_wallpaper(bool folder);
   void remove_wallpaper(std::string_view ref);
 
+  // 桌面互动：平台定时轮询光标后调用，坐标已归一化到壁纸视图（0..1）
+  void on_pointer(float x, float y, bool inside, bool down);
+  bool wallpaper_interaction_enabled() const;
+
   const Json& config() const { return config_.data(); }
   const std::string& config_path() const;
   bool paused() const { return state_paused_; }
@@ -128,6 +132,12 @@ class App {
   std::string pause_reason_;
   bool suspended_ = false;
   bool started_ = false;
+
+  // 上一次推给壁纸的光标状态（用来去抖，避免每帧都发）
+  float pointer_x_ = -1.0f;
+  float pointer_y_ = -1.0f;
+  bool pointer_inside_ = false;
+  bool pointer_down_ = false;
 };
 
 }  // namespace fl::core

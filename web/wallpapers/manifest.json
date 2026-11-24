@@ -5,6 +5,21 @@
     "description": "流动的极光帘幕与星尘"
   },
   {
+    "id": "ripple",
+    "name": "涟漪",
+    "description": "鼠标划过的地方荡开水波，左键炸开大圈"
+  },
+  {
+    "id": "spotlight",
+    "name": "追光",
+    "description": "一盏跟着鼠标走的灯，照亮漂浮的尘埃"
+  },
+  {
+    "id": "swarm",
+    "name": "群星",
+    "description": "粒子被光标吸引，按下左键把它们炸开"
+  },
+  {
     "id": "flow",
     "name": "流光",
     "description": "粒子沿矢量场游走的丝线"

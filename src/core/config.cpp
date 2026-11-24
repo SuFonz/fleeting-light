@@ -20,6 +20,7 @@ const Json& ConfigCenter::defaults() {
     j["app"]["pauseOnLock"] = true;
     j["app"]["pauseWhenSettingsOpen"] = false;
     j["app"]["devTools"] = false;
+    j["app"]["pointerTracking"] = true;
     return j;
   }();
   return kDefaults;
@@ -40,8 +41,9 @@ Json ConfigCenter::normalize(const Json& input) {
   out["wallpaper"]["fps"] = static_cast<int>(fps);
 
   // 布尔项强制类型（用户手改配置写错类型时回退到默认值）
-  const char* bool_paths[] = {"wallpaper.paused",    "app.startWithWindows", "app.pauseOnFullscreen",
-                              "app.pauseOnLock",     "app.pauseWhenSettingsOpen", "app.devTools"};
+  const char* bool_paths[] = {"wallpaper.paused",     "app.startWithWindows",      "app.pauseOnFullscreen",
+                              "app.pauseOnLock",      "app.pauseWhenSettingsOpen", "app.devTools",
+                              "app.pointerTracking"};
   for (const char* path : bool_paths) {
     const std::string_view p{path};
     const std::size_t dot = p.find('.');
@@ -116,6 +118,8 @@ bool ConfigCenter::pause_when_settings_open() const {
 bool ConfigCenter::dev_tools() const { return data_.get_path("app.devTools").as_bool(false); }
 
 bool ConfigCenter::start_with_windows() const { return data_.get_path("app.startWithWindows").as_bool(false); }
+
+bool ConfigCenter::pointer_tracking() const { return data_.get_path("app.pointerTracking").as_bool(true); }
 
 void ConfigCenter::set_user_paused(bool paused) {
   data_["wallpaper"]["paused"] = paused;

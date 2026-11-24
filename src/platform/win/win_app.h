@@ -52,6 +52,7 @@ class WinApp final : public core::IAppHost {
   void handle_tray_command(UINT command);
   void rebuild_tray_icon();
   void poll_fullscreen();
+  void poll_pointer();
   void update_tooltip();
 
   HINSTANCE instance_ = nullptr;

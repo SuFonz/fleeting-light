@@ -3,6 +3,9 @@ const bridge = window.bridge;
 
 const SWATCHES = {
   aurora: 'linear-gradient(120deg, #05201c 0%, #0e5a54 45%, #3b2f7a 100%)',
+  ripple: 'radial-gradient(circle at 46% 48%, #1c5a66 0%, #0a2430 42%, #040a12 100%)',
+  spotlight: 'radial-gradient(circle at 40% 38%, #fff1d2 0%, #6b5a48 20%, #0a0d16 62%)',
+  swarm: 'radial-gradient(circle at 55% 45%, #c8f4ff 0%, #6a6cd8 30%, #0a0b16 74%)',
   flow: 'linear-gradient(120deg, #05070e 0%, #17324a 45%, #8be9d6 100%)',
   starfield: 'linear-gradient(120deg, #04060d 0%, #16224a 55%, #9fc4ff 100%)',
   neon: 'linear-gradient(180deg, #3a0b4f 0%, #8b1a63 52%, #ff5a7a 76%, #140f24 100%)',
@@ -179,6 +182,7 @@ function renderSwitches() {
   setSwitch($('#pauseWhenSettingsOpen'), app.pauseWhenSettingsOpen === true);
   setSwitch($('#startWithWindows'), app.startWithWindows === true);
   setSwitch($('#devTools'), app.devTools === true);
+  setSwitch($('#pointerTracking'), app.pointerTracking !== false);
 }
 
 function renderStatus() {
@@ -301,6 +305,7 @@ function bindEvents() {
     ['#pauseWhenSettingsOpen', 'app', 'pauseWhenSettingsOpen'],
     ['#startWithWindows', 'app', 'startWithWindows'],
     ['#devTools', 'app', 'devTools'],
+    ['#pointerTracking', 'app', 'pointerTracking'],
   ];
 
   for (const [selector, group, key] of switchBindings) {

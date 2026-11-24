@@ -28,6 +28,7 @@ constexpr UINT kTrayMessage = WM_APP + 1;
 constexpr UINT kImportWallpaperMessage = WM_APP + 2;
 constexpr UINT_PTR kTimerFullscreen = 1;
 constexpr UINT_PTR kTimerWatchdog = 2;
+constexpr UINT_PTR kTimerPointer = 3;
 constexpr int kHotkeyToggleSettings = 1;
 
 enum MenuCommand : UINT {
@@ -144,6 +145,7 @@ int WinApp::run(HINSTANCE instance, bool open_settings_on_start) {
   rebuild_tray_icon();
   SetTimer(dispatcher_, kTimerFullscreen, 1500, nullptr);
   SetTimer(dispatcher_, kTimerWatchdog, 4000, nullptr);
+  SetTimer(dispatcher_, kTimerPointer, 16, nullptr);
   RegisterHotKey(dispatcher_, kHotkeyToggleSettings, MOD_CONTROL | MOD_ALT, VK_F9);
 
   core_.start();
@@ -160,6 +162,7 @@ int WinApp::run(HINSTANCE instance, bool open_settings_on_start) {
   quitting_ = true;
   KillTimer(dispatcher_, kTimerFullscreen);
   KillTimer(dispatcher_, kTimerWatchdog);
+  KillTimer(dispatcher_, kTimerPointer);
   UnregisterHotKey(dispatcher_, kHotkeyToggleSettings);
   if (wts_registered_) {
     WTSUnRegisterSessionNotification(dispatcher_);
@@ -233,6 +236,8 @@ LRESULT WinApp::handle_message(HWND hwnd, UINT message, WPARAM wparam, LPARAM lp
     if (message == WM_TIMER) {
       if (wparam == kTimerFullscreen) {
         poll_fullscreen();
+      } else if (wparam == kTimerPointer) {
+        poll_pointer();
       } else if (wparam == kTimerWatchdog && !quitting_) {
         if (!wallpaper_hwnd_ || !IsWindow(wallpaper_hwnd_)) {
           log_warn("壁纸窗口已失效（Explorer 可能重启），正在重建");
@@ -541,6 +546,29 @@ void WinApp::poll_fullscreen() {
   last_fullscreen_ = fullscreen;
   log_info(fullscreen ? "检测到全屏应用" : "退出全屏");
   core_.on_fullscreen_changed(fullscreen);
+}
+
+// 桌面互动：把光标位置换算成壁纸视图内的归一化坐标，交给核心去推给页面。
+// 壁纸窗口挂在 WorkerW 下层，收不到鼠标消息，所以只能这样轮询。
+void WinApp::poll_pointer() {
+  if (!core_.wallpaper_interaction_enabled()) return;
+  if (!wallpaper_hwnd_ || !IsWindow(wallpaper_hwnd_)) return;
+
+  RECT client{};
+  if (!GetClientRect(wallpaper_hwnd_, &client)) return;
+  const int width = client.right - client.left;
+  const int height = client.bottom - client.top;
+  if (width <= 0 || height <= 0) return;
+
+  POINT cursor{};
+  if (!GetCursorPos(&cursor)) return;
+  ScreenToClient(wallpaper_hwnd_, &cursor);
+
+  const float x = static_cast<float>(cursor.x) / static_cast<float>(width);
+  const float y = static_cast<float>(cursor.y) / static_cast<float>(height);
+  const bool inside = x >= 0.0f && x <= 1.0f && y >= 0.0f && y <= 1.0f;
+  const bool down = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
+  core_.on_pointer(x, y, inside, down);
 }
 
 }  // namespace fl::win
