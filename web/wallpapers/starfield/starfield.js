@@ -13,6 +13,8 @@ bootWallpaper({
 
     let stars = [];
     let glow = null;
+    // 按颜色分组，一帧只发 5 次 stroke（原本每颗星一次）
+    const buckets = [];
 
     const STAR_TINTS = [
       'rgba(198, 226, 255, 1)',
@@ -26,7 +28,7 @@ bootWallpaper({
       star.x = Math.random() * 2 - 1;
       star.y = Math.random() * 2 - 1;
       star.z = spread ? Math.random() * 0.9 + 0.1 : 1;
-      star.tint = STAR_TINTS[(Math.random() * STAR_TINTS.length) | 0];
+      star.tintIndex = (Math.random() * STAR_TINTS.length) | 0;
       star.size = 0.6 + Math.random() * 1.5;
       return star;
     }
@@ -40,7 +42,14 @@ bootWallpaper({
       glow.addColorStop(0.45, 'rgba(22, 34, 78, 0.05)');
       glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
+      if (buckets.length === 0) {
+        for (let i = 0; i < STAR_TINTS.length; i += 1) buckets.push([]);
+      }
+      for (const bucket of buckets) bucket.length = 0;
+
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = '#04060d';
       ctx.fillRect(0, 0, W, H);
     }
@@ -78,6 +87,8 @@ bootWallpaper({
 
         ctx.lineCap = 'round';
         const active = Math.max(8, Math.round(stars.length * Math.min(1, density)));
+
+        for (const bucket of buckets) bucket.length = 0;
         for (let index = 0; index < active; index += 1) {
           const star = stars[index];
           const prevZ = star.z;
@@ -94,13 +105,21 @@ bootWallpaper({
           const px = cx + star.x * pk * scale;
           const py = cy + star.y * pk * scale;
 
-          const depth = Math.min(1, 1.2 - star.z);
-          ctx.globalAlpha = Math.min(1, depth * 0.9) * intensity;
-          ctx.strokeStyle = star.tint;
-          ctx.lineWidth = Math.max(0.6, star.size * depth * 1.4);
+          buckets[star.tintIndex].push(px, py, x, y);
+        }
+
+        // 每档颜色一次 stroke
+        ctx.lineWidth = 1.3;
+        for (let c = 0; c < buckets.length; c += 1) {
+          const bucket = buckets[c];
+          if (bucket.length === 0) continue;
+          ctx.globalAlpha = 0.72 * intensity;
+          ctx.strokeStyle = STAR_TINTS[c];
           ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(x, y);
+          for (let k = 0; k < bucket.length; k += 4) {
+            ctx.moveTo(bucket[k], bucket[k + 1]);
+            ctx.lineTo(bucket[k + 2], bucket[k + 3]);
+          }
           ctx.stroke();
         }
 

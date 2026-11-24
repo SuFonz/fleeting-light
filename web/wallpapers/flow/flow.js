@@ -22,13 +22,14 @@ bootWallpaper({
 
     const MAX_PARTICLES = 1100;
     const particles = [];
+    // 按颜色分组攒线段，一次 stroke 画完一组，把 1100 次 draw call 压到 6 次
+    const buckets = PALETTE.map(() => []);
 
     function seed(particle, anywhere) {
       particle.x = Math.random() * W;
       particle.y = Math.random() * H;
       particle.age = anywhere ? Math.random() * 4 : 0;
-      particle.color = PALETTE[(Math.random() * PALETTE.length) | 0];
-      particle.width = 0.6 + Math.random() * 1.1;
+      particle.colorIndex = (Math.random() * PALETTE.length) | 0;
       return particle;
     }
 
@@ -86,19 +87,16 @@ bootWallpaper({
         const step = 64 * speed;
         const margin = 40;
 
+        // 先把这一帧所有线段按颜色攒进对应的桶里
+        for (const bucket of buckets) bucket.length = 0;
         for (let i = 0; i < active; i += 1) {
           const particle = particles[i];
           const angle = angleAt(particle.x, particle.y, t);
           const nx = particle.x + Math.cos(angle) * step * dt;
           const ny = particle.y + Math.sin(angle) * step * dt;
 
-          ctx.globalAlpha = 0.62 * intensity;
-          ctx.strokeStyle = particle.color;
-          ctx.lineWidth = particle.width;
-          ctx.beginPath();
-          ctx.moveTo(particle.x, particle.y);
-          ctx.lineTo(nx, ny);
-          ctx.stroke();
+          const bucket = buckets[particle.colorIndex];
+          bucket.push(particle.x, particle.y, nx, ny);
 
           particle.x = nx;
           particle.y = ny;
@@ -109,6 +107,21 @@ bootWallpaper({
           } else if (particle.age > 8 + Math.random() * 6) {
             seed(particle, false);
           }
+        }
+
+        // 每种颜色一次 stroke：1100 次 draw call 降到 6 次
+        ctx.globalAlpha = 0.62 * intensity;
+        ctx.lineWidth = 1.0;
+        for (let c = 0; c < buckets.length; c += 1) {
+          const bucket = buckets[c];
+          if (bucket.length === 0) continue;
+          ctx.strokeStyle = PALETTE[c];
+          ctx.beginPath();
+          for (let k = 0; k < bucket.length; k += 4) {
+            ctx.moveTo(bucket[k], bucket[k + 1]);
+            ctx.lineTo(bucket[k + 2], bucket[k + 3]);
+          }
+          ctx.stroke();
         }
 
         ctx.globalAlpha = 1;

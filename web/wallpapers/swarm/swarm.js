@@ -16,13 +16,19 @@ bootWallpaper({
     let pointer = { x: 0.5, y: 0.5, inside: false, down: false };
     let lastDown = false;
 
+    // tint 是连续的（160 青 → 290 紫），量化成 10 档后分桶，
+    // 每档一次 fill，把 900 次 draw call 压到 10 次
+    const TINT_STEPS = 10;
+    const buckets = Array.from({ length: TINT_STEPS }, () => []);
+
     function reset(particle, anywhere) {
-      particle.x = anywhere ? Math.random() * W : Math.random() * W;
+      particle.x = Math.random() * W;
       particle.y = anywhere ? Math.random() * H : Math.random() * H;
       particle.vx = (Math.random() - 0.5) * 20;
       particle.vy = (Math.random() - 0.5) * 20;
       particle.size = 0.8 + Math.random() * 1.8;
-      particle.tint = 160 + Math.random() * 130;  // 青 -> 紫
+      particle.tint = 160 + Math.random() * 130;
+      particle.bucket = Math.min(TINT_STEPS - 1, ((particle.tint - 160) / 130 * TINT_STEPS) | 0);
       return particle;
     }
 
@@ -89,6 +95,7 @@ bootWallpaper({
         ctx.fillRect(0, 0, W, H);
 
         ctx.globalCompositeOperation = 'lighter';
+        for (const bucket of buckets) bucket.length = 0;
         for (let i = 0; i < active; i += 1) {
           const particle = particles[i];
 
@@ -109,12 +116,25 @@ bootWallpaper({
           if (particle.y < -40) particle.y = H + 40;
           if (particle.y > H + 40) particle.y = -40;
 
-          const velocity = Math.hypot(particle.vx, particle.vy);
-          const alpha = Math.min(0.95, (0.42 + velocity * 0.0025) * intensity);
-          ctx.globalAlpha = alpha;
-          ctx.fillStyle = `hsl(${particle.tint}, 95%, ${62 + Math.min(24, velocity * 0.05)}%)`;
+          const bucket = buckets[particle.bucket];
+          // 每个粒子存 x, y, size 三个数
+          bucket.push(particle.x, particle.y, particle.size);
+        }
+
+        // 每档颜色一次 fill。alpha 压低一点：粒子被吸成一圈时
+        // lighter 叠加会把整环烧成白色，0.30 能保住颜色层次
+        ctx.globalAlpha = Math.min(0.9, 0.30 * intensity);
+        for (let c = 0; c < TINT_STEPS; c += 1) {
+          const bucket = buckets[c];
+          if (bucket.length === 0) continue;
+          const hue = 160 + ((c + 0.5) / TINT_STEPS) * 130;
+          ctx.fillStyle = `hsl(${hue | 0}, 95%, 68%)`;
           ctx.beginPath();
-          ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+          for (let k = 0; k < bucket.length; k += 3) {
+            const r = bucket[k + 2];
+            ctx.moveTo(bucket[k] + r, bucket[k + 1]);
+            ctx.arc(bucket[k], bucket[k + 1], r, 0, Math.PI * 2);
+          }
           ctx.fill();
         }
 

@@ -43,7 +43,7 @@ enum MenuCommand : UINT {
 
 bool query_fullscreen_state() {
   QUERY_USER_NOTIFICATION_STATE state = QUNS_ACCEPTS_NOTIFICATIONS;
-  if (FAILED(SHQueryUserNotificationState(&state))) return false;
+  if (SHQueryUserNotificationState(&state) != S_OK) return false;
   switch (state) {
     case QUNS_BUSY:
     case QUNS_RUNNING_D3D_FULL_SCREEN:
@@ -52,6 +52,32 @@ bool query_fullscreen_state() {
     default:
       return false;
   }
+}
+
+// 桌面被窗口完全盖住了吗？壁纸挂在 WorkerW 最底层，只要前面有窗口铺满桌面就看不见。
+// 注意：只用来省电，且轮询间隔要短 —— 误判或恢复太慢都会被用户感知成"壁纸卡住了"。
+bool desktop_is_covered() {
+  HWND foreground = GetForegroundWindow();
+  if (!foreground) return false;
+  if (foreground == GetShellWindow()) return false;   // 焦点在桌面本身
+  if (!IsWindowVisible(foreground)) return false;
+  if (IsIconic(foreground)) return false;
+
+  WINDOWPLACEMENT placement{};
+  placement.length = sizeof(placement);
+  if (!GetWindowPlacement(foreground, &placement)) return false;
+  if (placement.showCmd != SW_SHOWMAXIMIZED) return false;
+
+  RECT windowRect{};
+  if (!GetWindowRect(foreground, &windowRect)) return false;
+  HMONITOR monitor = MonitorFromWindow(foreground, MONITOR_DEFAULTTONEAREST);
+  MONITORINFO info{};
+  info.cbSize = sizeof(info);
+  if (!GetMonitorInfoW(monitor, &info)) return false;
+
+  const RECT& screen = info.rcMonitor;
+  return windowRect.left <= screen.left && windowRect.top <= screen.top &&
+         windowRect.right >= screen.right && windowRect.bottom >= screen.bottom;
 }
 
 std::wstring tooltip_for(const core::App& core) {
@@ -143,7 +169,9 @@ int WinApp::run(HINSTANCE instance, bool open_settings_on_start) {
   WebView2Env::instance().set_user_data_folder(to_wide(env::join_path(env::user_data_dir(), "WebView2")));
 
   rebuild_tray_icon();
-  SetTimer(dispatcher_, kTimerFullscreen, 1500, nullptr);
+  // 400ms 而不是原来的 1500ms：全屏应用/最大化窗口退出后，
+  // 壁纸要在用户感知不到延迟的时间内恢复动画，否则会被当成"卡住了"
+  SetTimer(dispatcher_, kTimerFullscreen, 400, nullptr);
   SetTimer(dispatcher_, kTimerWatchdog, 4000, nullptr);
   SetTimer(dispatcher_, kTimerPointer, 16, nullptr);
   RegisterHotKey(dispatcher_, kHotkeyToggleSettings, MOD_CONTROL | MOD_ALT, VK_F9);
@@ -541,11 +569,13 @@ void WinApp::request_import_wallpaper(bool folder) {
 }
 
 void WinApp::poll_fullscreen() {
-  const bool fullscreen = query_fullscreen_state();
-  if (fullscreen == last_fullscreen_) return;
-  last_fullscreen_ = fullscreen;
-  log_info(fullscreen ? "检测到全屏应用" : "退出全屏");
-  core_.on_fullscreen_changed(fullscreen);
+  // 全屏应用和"桌面被最大化窗口盖住"对壁纸来说是一回事：看不见了。
+  // 后者更常见（日常开着浏览器/编辑器干活），不处理的话壁纸会一直在后台满速渲染。
+  const bool hidden = query_fullscreen_state() || desktop_is_covered();
+  if (hidden == last_fullscreen_) return;
+  last_fullscreen_ = hidden;
+  log_info(hidden ? "壁纸不可见，暂停渲染" : "壁纸可见，恢复渲染");
+  core_.on_fullscreen_changed(hidden);
 }
 
 // 桌面互动：把光标位置换算成壁纸视图内的归一化坐标，交给核心去推给页面。

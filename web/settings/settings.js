@@ -366,6 +366,18 @@ function handleMessage(message) {
       renderStatus();
       break;
 
+    case 'stats': {
+      const node = document.getElementById('fpsValue');
+      if (node) {
+        const fps = Number(message.fps) || 0;
+        const drawMs = Number(message.drawMs) || 0;
+        node.textContent = `${fps.toFixed(1)} fps · 绘制 ${drawMs.toFixed(2)} ms`;
+        // 低于 50 帧标红，一眼看出是否真掉帧
+        node.classList.toggle('warn', fps > 0 && fps < 50);
+      }
+      break;
+    }
+
     case 'toast':
       toast(message.message || '', message.level);
       break;

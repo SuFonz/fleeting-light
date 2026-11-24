@@ -235,9 +235,7 @@ void App::apply_suspension() {
   if (wallpaper_) wallpaper_->set_visible(!suspended_);
   if (!started_) return;
   host_.set_wallpaper_suspended(suspended_);
-}
-
-void App::broadcast_state() {
+}void App::broadcast_state() {
   const std::string state = make_state_json(state_paused_, pause_reason_, in_settings_open_, in_user_paused_);
   if (wallpaper_) wallpaper_->send(state);
   if (settings_) settings_->send(state);
@@ -528,7 +526,16 @@ void App::handle_wallpaper_message(std::string_view json) {
     else log_info("[壁纸] " + text);
   } else if (type == "stats") {
     const double fps = msg.at("fps").as_double(0.0);
+    const double draw_ms = msg.at("drawMs").as_double(0.0);
     log_debug("壁纸帧率: " + std::to_string(static_cast<int>(fps + 0.5)));
+    // 顺手转给设置面板，让它能显示实时帧率
+    if (settings_) {
+      Json relay = Json::object();
+      relay["type"] = "stats";
+      relay["fps"] = fps;
+      relay["drawMs"] = draw_ms;
+      settings_->send(relay.dump());
+    }
   }
 }
 

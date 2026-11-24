@@ -259,7 +259,13 @@ void WebView2Surface::set_visible(bool visible) {
   visible_ = visible;
   if (!controller_) return;
   controller_->put_IsVisible(visible ? TRUE : FALSE);
-  if (visible) apply_bounds();
+  if (visible) {
+    // 从隐藏恢复时尺寸通常没变，apply_bounds 会提前 return，
+    // 但 WebView2 需要一次 bounds 变化才会重新提交合成帧，所以这里强制塞一次。
+    RECT zero{0, 0, 0, 0};
+    controller_->put_Bounds(zero);
+    apply_bounds();
+  }
 }
 
 void WebView2Surface::resize(int width, int height) {
