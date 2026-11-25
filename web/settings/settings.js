@@ -28,17 +28,23 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 // ------------------------------------------------------------------ 通信
 
 function send(message) {
-  if (bridge) bridge.send(message);
+  if (bridge) {
+    bridge.send(message);
+  }
 }
 
 function queuePatch(patch) {
   pendingPatch = mergeDeep(pendingPatch || {}, patch);
-  if (patchTimer) clearTimeout(patchTimer);
+  if (patchTimer) {
+    clearTimeout(patchTimer);
+  }
   patchTimer = setTimeout(flushPatch, 140);
 }
 
 function flushPatch() {
-  if (!pendingPatch) return;
+  if (!pendingPatch) {
+    return;
+  }
   const config = pendingPatch;
   pendingPatch = null;
   patchTimer = 0;
@@ -91,7 +97,9 @@ function createWallpaperRow(item, activeId) {
     remove.addEventListener('click', (event) => {
       event.stopPropagation();
       const label = item.name || item.id;
-      if (!window.confirm(`确定移除「${label}」吗？\n只会删掉导入的那份副本，不会动你原来的文件夹。`)) return;
+      if (!window.confirm(`确定移除「${label}」吗？\n只会删掉导入的那份副本，不会动你原来的文件夹。`)) {
+        return;
+      }
       send({ type: 'action', name: 'remove_wallpaper', id: item.id });
     });
     row.append(remove);
@@ -103,7 +111,9 @@ function createWallpaperRow(item, activeId) {
   row.append(check);
 
   row.addEventListener('click', () => {
-    if (item.id === activeId) return;
+    if (item.id === activeId) {
+      return;
+    }
     // 切壁纸要立刻生效，不走防抖
     flushPatch();
     send({ type: 'update', config: { wallpaper: { id: item.id } } });
@@ -114,7 +124,9 @@ function createWallpaperRow(item, activeId) {
 
 function renderWallpapers() {
   const info = view.info;
-  if (!info || !Array.isArray(info.wallpapers)) return;
+  if (!info || !Array.isArray(info.wallpapers)) {
+    return;
+  }
 
   const activeId = view.config && view.config.wallpaper ? view.config.wallpaper.id : null;
   const builtin = info.wallpapers.filter((item) => !item.user);
@@ -123,20 +135,28 @@ function renderWallpapers() {
   const builtinList = $('#builtinList');
   if (builtinList) {
     builtinList.innerHTML = '';
-    for (const item of builtin) builtinList.append(createWallpaperRow(item, activeId));
+    for (const item of builtin) {
+      builtinList.append(createWallpaperRow(item, activeId));
+    }
   }
 
   const userList = $('#userList');
   if (userList) {
     userList.innerHTML = '';
-    for (const item of user) userList.append(createWallpaperRow(item, activeId));
+    for (const item of user) {
+      userList.append(createWallpaperRow(item, activeId));
+    }
   }
 
   const userGroup = $('#userGroup');
-  if (userGroup) userGroup.hidden = user.length === 0;
+  if (userGroup) {
+    userGroup.hidden = user.length === 0;
+  }
 
   const hint = $('#userDirHint');
-  if (hint) hint.textContent = info.userWallpapersDir || '…';
+  if (hint) {
+    hint.textContent = info.userWallpapersDir || '…';
+  }
 }
 
 function renderParams() {
@@ -154,9 +174,15 @@ function renderParams() {
   const speedRange = $('#speedRange');
   const intensityRange = $('#intensityRange');
   const densityRange = $('#densityRange');
-  if (document.activeElement !== speedRange) speedRange.value = String(speed);
-  if (document.activeElement !== intensityRange) intensityRange.value = String(intensity);
-  if (document.activeElement !== densityRange) densityRange.value = String(density);
+  if (document.activeElement !== speedRange) {
+    speedRange.value = String(speed);
+  }
+  if (document.activeElement !== intensityRange) {
+    intensityRange.value = String(intensity);
+  }
+  if (document.activeElement !== densityRange) {
+    densityRange.value = String(density);
+  }
   $('#speedValue').textContent = speed.toFixed(1) + '×';
   $('#intensityValue').textContent = intensity.toFixed(1);
   $('#densityValue').textContent = density.toFixed(1);
@@ -202,7 +228,9 @@ function renderStatus() {
 
 function renderInfo() {
   const info = view.info;
-  if (!info) return;
+  if (!info) {
+    return;
+  }
   $('#versionLabel').textContent = 'v' + (info.version || '—');
 
   const rows = [
@@ -240,8 +268,12 @@ function toast(message, level) {
 function bindEvents() {
   for (const item of $$('.nav-item')) {
     item.addEventListener('click', () => {
-      for (const other of $$('.nav-item')) other.classList.toggle('active', other === item);
-      for (const pane of $$('.pane')) pane.classList.toggle('active', pane.id === 'pane-' + item.dataset.pane);
+      for (const other of $$('.nav-item')) {
+        other.classList.toggle('active', other === item);
+      }
+      for (const pane of $$('.pane')) {
+        pane.classList.toggle('active', pane.id === 'pane-' + item.dataset.pane);
+      }
     });
   }
 
@@ -268,7 +300,9 @@ function bindEvents() {
   for (const button of $$('#fpsGroup button')) {
     button.addEventListener('click', () => {
       queuePatch({ wallpaper: { fps: Number(button.dataset.fps) } });
-      for (const other of $$('#fpsGroup button')) other.classList.toggle('active', other === button);
+      for (const other of $$('#fpsGroup button')) {
+        other.classList.toggle('active', other === button);
+      }
     });
   }
 
@@ -332,7 +366,9 @@ function bindEvents() {
 // ------------------------------------------------------------------ 启动
 
 function handleMessage(message) {
-  if (!message || typeof message !== 'object') return;
+  if (!message || typeof message !== 'object') {
+    return;
+  }
 
   switch (message.type) {
     case 'init':
@@ -382,7 +418,9 @@ function handleMessage(message) {
 function init() {
   bindEvents();
   renderStatus();
-  if (bridge) bridge.onMessage(handleMessage);
+  if (bridge) {
+    bridge.onMessage(handleMessage);
+  }
   // 页面加载完成 → 请求一次完整状态
   send({ type: 'ready' });
   setTimeout(() => send({ type: 'request_init' }), 350);

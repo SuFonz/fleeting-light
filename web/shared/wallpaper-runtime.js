@@ -71,9 +71,13 @@ export function bootWallpaper(definition) {
   };
 
   function currentFpsLimit() {
-    if (forcedFps > 0) return forcedFps;
+    if (forcedFps > 0) {
+      return forcedFps;
+    }
     // 设置面板打开时，若无自定义上限就降到 30fps，省点 GPU
-    if (state.settingsOpen && (!state.fpsLimit || state.fpsLimit > 30)) return 30;
+    if (state.settingsOpen && (!state.fpsLimit || state.fpsLimit > 30)) {
+      return 30;
+    }
     return state.fpsLimit;
   }
 
@@ -82,7 +86,9 @@ export function bootWallpaper(definition) {
     const height = Math.max(1, Math.floor(window.innerHeight));
     const dpr = computeDpr(width, height);
     const changed = width !== state.width || height !== state.height || dpr !== state.dpr;
-    if (!changed) return false;
+    if (!changed) {
+      return false;
+    }
 
     state.width = width;
     state.height = height;
@@ -98,10 +104,14 @@ export function bootWallpaper(definition) {
   }
 
   function tick(now) {
-    if (!running) return;
+    if (!running) {
+      return;
+    }
     frameId = requestAnimationFrame(tick);
 
-    if (lastTime === 0) lastTime = now;
+    if (lastTime === 0) {
+      lastTime = now;
+    }
     const delta = now - lastTime;
     const limit = currentFpsLimit();
 
@@ -111,7 +121,9 @@ export function bootWallpaper(definition) {
       // 留 15% 容差。60Hz 屏幕上 rAF 的 delta 是 16.6ms，而 1000/60 = 16.667ms，
       // 严格要求 accumulator >= interval 会让这些帧全部被丢掉，
       // 实测直接把 60fps 压到 38~40fps —— 这就是"感觉掉帧"的元凶。
-      if (accumulator < interval * 0.85) return;
+      if (accumulator < interval * 0.85) {
+        return;
+      }
       accumulator = Math.max(0, Math.min(accumulator - interval, interval));
     }
 
@@ -133,13 +145,17 @@ export function bootWallpaper(definition) {
 
     if (!readySent) {
       readySent = true;
-      if (window.bridge) window.bridge.send({ type: 'ready', id: definition.id });
+      if (window.bridge) {
+        window.bridge.send({ type: 'ready', id: definition.id });
+      }
     }
 
     // 每 2 秒上报一次帧率和单帧绘制耗时：设置面板靠它显示实时性能。
     // 开销可以忽略（一次算术 + 一条消息），开着便于用户自查是否真的掉帧。
     frames += 1;
-    if (statsStart === 0) statsStart = now;
+    if (statsStart === 0) {
+      statsStart = now;
+    }
     if (now - statsStart >= 2000) {
       const fps = (frames * 1000) / (now - statsStart);
       frames = 0;
@@ -167,7 +183,9 @@ export function bootWallpaper(definition) {
   let quality = 1;
 
   function applyQuality() {
-    if (!renderer || !renderer.resize) return;
+    if (!renderer || !renderer.resize) {
+      return;
+    }
     const baseDpr = computeDpr(state.width, state.height);
     const dpr = Math.max(0.6, baseDpr * quality);
     canvas.width = Math.floor(state.width * dpr);
@@ -200,7 +218,9 @@ export function bootWallpaper(definition) {
   }
 
   function start() {
-    if (running) return;
+    if (running) {
+      return;
+    }
     running = true;
     lastTime = 0;
     accumulator = 0;
@@ -210,12 +230,16 @@ export function bootWallpaper(definition) {
 
   function stop() {
     running = false;
-    if (frameId) cancelAnimationFrame(frameId);
+    if (frameId) {
+      cancelAnimationFrame(frameId);
+    }
     frameId = 0;
   }
 
   function report(level, message) {
-    if (window.bridge) window.bridge.send({ type: 'log', level, message });
+    if (window.bridge) {
+      window.bridge.send({ type: 'log', level, message });
+    }
   }
 
   // 页面不可见（切到别的虚拟桌面、RDP 断开等）时彻底停下，别空转
@@ -229,37 +253,53 @@ export function bootWallpaper(definition) {
   });
 
   function applyPause(paused) {
-    if (state.paused === paused) return;
+    if (state.paused === paused) {
+      return;
+    }
     state.paused = paused;
     if (paused) {
       stop();
-      if (renderer && renderer.onPause) renderer.onPause();
+      if (renderer && renderer.onPause) {
+        renderer.onPause();
+      }
     } else {
-      if (renderer && renderer.onResume) renderer.onResume();
+      if (renderer && renderer.onResume) {
+        renderer.onResume();
+      }
       start();
     }
   }
 
   function applyParams(params) {
-    if (!params || typeof params !== 'object') return;
+    if (!params || typeof params !== 'object') {
+      return;
+    }
     state.params = { ...state.params, ...params };
-    if (renderer && renderer.setParams) renderer.setParams(state.params);
+    if (renderer && renderer.setParams) {
+      renderer.setParams(state.params);
+    }
   }
 
   function applyFps(fps) {
     const value = Number(fps);
-    if (!Number.isFinite(value)) return;
+    if (!Number.isFinite(value)) {
+      return;
+    }
     state.fpsLimit = Math.max(0, Math.min(240, Math.round(value)));
   }
 
   function setSettingsOpen(open) {
     const changed = state.settingsOpen !== open;
     state.settingsOpen = open;
-    if (changed && renderer && renderer.setSettingsOpen) renderer.setSettingsOpen(open);
+    if (changed && renderer && renderer.setSettingsOpen) {
+      renderer.setSettingsOpen(open);
+    }
   }
 
   function handleMessage(message) {
-    if (!message || typeof message !== 'object') return;
+    if (!message || typeof message !== 'object') {
+      return;
+    }
     switch (message.type) {
       case 'init': {
         const wallpaper = message.config && message.config.wallpaper;
@@ -294,7 +334,9 @@ export function bootWallpaper(definition) {
           down: message.down === true,
         };
         window.__flPointer = state.pointer;
-        if (renderer && renderer.onPointer) renderer.onPointer(state.pointer);
+        if (renderer && renderer.onPointer) {
+          renderer.onPointer(state.pointer);
+        }
         break;
       }
       default:
@@ -323,11 +365,15 @@ export function bootWallpaper(definition) {
       }
     });
 
-    if (window.bridge) window.bridge.onMessage(handleMessage);
+    if (window.bridge) {
+      window.bridge.onMessage(handleMessage);
+    }
 
     start();
     // 通知核心：页面已加载；核心会回 init（重复也无所谓，状态是幂等的）
-    if (window.bridge) window.bridge.send({ type: 'ready', id: definition.id });
+    if (window.bridge) {
+      window.bridge.send({ type: 'ready', id: definition.id });
+    }
     report('info', `壁纸 ${definition.id} 已加载`);
   }
 

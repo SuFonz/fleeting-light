@@ -26,8 +26,8 @@ std::string web_root();
 std::string app_version();
 
 std::string join_path(std::string_view a, std::string_view b);
-std::string base_name(std::string_view path);            // 去掉目录部分
-std::string file_stem(std::string_view path);            // 再去掉扩展名
+std::string base_name(std::string_view path);  // 去掉目录部分
+std::string file_stem(std::string_view path);  // 再去掉扩展名
 bool file_exists(std::string_view path);
 bool dir_exists(std::string_view path);
 bool ensure_dir(std::string_view path);
