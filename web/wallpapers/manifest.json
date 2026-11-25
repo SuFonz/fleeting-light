@@ -1,4 +1,10 @@
-﻿[
+[
+  {
+    "id": "neoncat",
+    "name": "霓虹猫娘",
+    "description": "赛博都市的夜晚，猫耳少女托腮；原子在飘，点击开火",
+    "preview": "preview.jpg"
+  },
   {
     "id": "riverside",
     "name": "河畔",

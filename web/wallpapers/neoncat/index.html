@@ -1,0 +1,550 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="color-scheme" content="dark">
+<title>NEON CAT // Living Wallpaper</title>
+<style>
+:root{--mx:0;--my:0;--glow:0;--cyan:#8cecff;--pink:#e9b4ff}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#070b19}
+body{font-family:system-ui,sans-serif;cursor:none;user-select:none}
+#world{position:fixed;inset:-2.5%;overflow:hidden;isolation:isolate;background:#090e20}
+#art{position:absolute;inset:-2%;width:104%;height:104%;object-fit:cover;object-position:center;transform:translate3d(calc(var(--mx)*-10px),calc(var(--my)*-8px),0) scale(1.035);will-change:transform}
+#shade{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 63% 48%,transparent 28%,rgba(3,7,20,.10) 66%,rgba(1,4,15,.42) 115%),linear-gradient(90deg,rgba(2,8,22,.16),transparent 42%,rgba(8,5,24,.10))}
+#depth{position:absolute;inset:0;pointer-events:none;transform:translate3d(calc(var(--mx)*-18px),calc(var(--my)*-12px),0);transition:transform .18s ease-out}
+#holoGlow{position:absolute;left:2%;top:20%;width:32%;height:46%;background:radial-gradient(ellipse,rgba(72,207,255,.20),transparent 72%);animation:pulse 5s ease-in-out infinite}
+#faceAura{position:absolute;left:54%;top:15%;width:31%;height:48%;opacity:calc(.13 + var(--glow)*.35);background:radial-gradient(ellipse,rgba(185,162,255,.26),rgba(96,221,255,.09) 44%,transparent 78%);transition:opacity .3s}
+#lightSweep{display:none}
+#rain{display:none}
+.city-lines{position:absolute;left:-10%;right:-10%;bottom:14%;height:24%;opacity:.45;background:linear-gradient(90deg,transparent 0%,rgba(100,220,255,.04) 18%,rgba(100,220,255,.17) 50%,rgba(100,220,255,.04) 82%,transparent 100%);animation:city 7s ease-in-out infinite}
+#traffic{position:absolute;inset:0;overflow:hidden}
+.car{display:none}
+
+#drone{position:absolute;left:42%;top:44%;width:42px;height:13px;opacity:.7;filter:drop-shadow(0 0 8px #8deaff);animation:drift 12s ease-in-out infinite}
+#drone:before{content:"";position:absolute;left:8px;right:8px;top:4px;height:5px;border-radius:50%;background:linear-gradient(90deg,#77dfff,#e4c7ff,#77dfff);box-shadow:0 0 12px 4px rgba(94,218,255,.65)}
+#drone:after{content:"";position:absolute;left:-28px;right:-28px;top:6px;height:1px;background:linear-gradient(90deg,transparent,rgba(113,220,255,.35) 35%,rgba(113,220,255,.7) 50%,rgba(113,220,255,.35) 65%,transparent)}
+#holo{position:absolute;left:3%;top:24%;width:25%;height:36%;border:1px solid rgba(132,225,255,.12);border-radius:8px;transform:perspective(700px) rotateY(8deg) rotateZ(-2deg);background:linear-gradient(135deg,rgba(72,177,255,.035),rgba(110,200,255,.005));box-shadow:inset 0 0 28px rgba(80,200,255,.04),0 0 28px rgba(63,196,255,.07);opacity:.7;overflow:hidden;animation:holoFloat 6s ease-in-out infinite}
+#holo:before{content:"";position:absolute;inset:8% 7%;background:linear-gradient(90deg,transparent 20%,rgba(128,225,255,.18) 20.5%,transparent 21%);mask-image:linear-gradient(90deg,#000,transparent 95%);opacity:.45}
+#holo:after{content:none}
+#holo2{position:absolute;right:2%;bottom:6%;width:18%;height:23%;border:1px solid rgba(211,173,255,.16);border-radius:7px;background:linear-gradient(140deg,rgba(123,91,255,.08),rgba(64,209,255,.025));transform:perspective(500px) rotateY(-12deg) rotateZ(3deg);box-shadow:0 0 24px rgba(163,123,255,.1);opacity:.62;animation:holoFloat 7s ease-in-out infinite reverse}
+#holo2:before{content:none}
+#cursor{position:fixed;z-index:30;left:50%;top:50%;width:22px;height:22px;border:1px solid rgba(179,245,255,.9);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 13px rgba(102,220,255,.8),inset 0 0 8px rgba(102,220,255,.35);mix-blend-mode:screen;transition:width .2s,height .2s,background .2s}
+#cursor:before,#cursor:after{content:"";position:absolute;background:rgba(180,244,255,.8);left:50%;top:50%;transform:translate(-50%,-50%)}
+#cursor:before{width:34px;height:1px}#cursor:after{height:34px;width:1px}
+#cursor.active{width:48px;height:48px;background:rgba(126,224,255,.08)}
+
+#ambient{position:absolute;inset:0;pointer-events:none;background:radial-gradient(500px circle at var(--px,50%) var(--py,50%),rgba(91,203,255,.16),transparent 72%);transition:background .1s}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 52%,rgba(0,0,15,.14) 78%,rgba(0,0,15,.40) 100%)}
+#grain{display:none}
+#sparkCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:12}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.95)}50%{opacity:1;transform:scale(1.08)}}
+@keyframes city{0%,100%{opacity:.2;transform:translateX(-2%)}50%{opacity:.65;transform:translateX(2%)}}
+@keyframes drift{0%,100%{transform:translate(0,0) rotate(-3deg)}50%{transform:translate(90px,-35px) rotate(3deg)}}
+@keyframes holoFloat{0%,100%{translate:0 0}50%{translate:0 -9px}}
+@keyframes scan{from{top:15%;opacity:0}15%{opacity:1}90%{opacity:.8}to{top:92%;opacity:0}}
+/* 射击：在原有瞄准镜上叠一层后坐 + 爆闪，不新增任何元素 */
+@keyframes fireKick{
+  0%{transform:translate(-50%,-50%) scale(1);box-shadow:0 0 13px rgba(102,220,255,.8),inset 0 0 8px rgba(102,220,255,.35)}
+  18%{transform:translate(-50%,-50%) scale(1.62);box-shadow:0 0 26px 6px rgba(170,240,255,.95),inset 0 0 16px rgba(190,245,255,.9)}
+  45%{transform:translate(-50%,-50%) scale(1.2)}
+  100%{transform:translate(-50%,-50%) scale(1);box-shadow:0 0 13px rgba(102,220,255,.8),inset 0 0 8px rgba(102,220,255,.35)}
+}
+#cursor.fire{animation:fireKick .3s cubic-bezier(.2,.9,.3,1);border-color:#fff}
+#cursor.fire:before,#cursor.fire:after{background:#fff;box-shadow:0 0 10px 3px rgba(160,238,255,.95)}
+25%{transform:translate(2%,-1%)}50%{transform:translate(-1%,2%)}75%{transform:translate(1%,1%)}100%{transform:translate(-2%,-1%)}}
+@media(max-width:700px){#art{object-position:58% center}#holo{width:34%;height:25%;top:31%}#holo2{width:24%;height:16%}#drone{left:34%;top:38%}body{cursor:auto}#cursor{display:none}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:30s!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="world">
+<img id="art" alt="" src="./bg.jpg">
+<div id="shade"></div>
+<div id="depth">
+  <div id="holoGlow"></div><div id="faceAura"></div>
+  <div id="holo"></div><div id="holo2"></div>
+  <div id="drone"></div>
+  <div class="city-lines"></div>
+</div>
+<div id="ambient"></div>
+<div id="vignette"></div>
+</div>
+<canvas id="sparkCanvas"></canvas>
+<div id="cursor"></div>
+<script src="../../shared/bridge.js"></script>
+<script>
+(()=>{
+ const root=document.documentElement, world=document.getElementById('world');
+ const cursor=document.getElementById('cursor'), canvas=document.getElementById('sparkCanvas');
+ const ctx=canvas.getContext('2d',{alpha:true});
+ let w=0,h=0,px=innerWidth/2,py=innerHeight/2,tx=px,ty=py,glow=0;
+ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ function resize(){
+   const dpr=Math.min(window.devicePixelRatio||1,.85);
+   w=canvas.width=Math.round(innerWidth*dpr);
+   h=canvas.height=Math.round(innerHeight*dpr);
+   canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';
+   ctx.setTransform(dpr,0,0,dpr,0,0);
+ }
+ addEventListener('resize',resize);resize();
+ // layered aerial traffic: each streak has its own speed, altitude and glow
+ const traffic=document.getElementById('traffic');
+
+ // ---- 原子：原子核 + 三条椭圆轨道 + 绕轨道转的电子 ----
+ const params={speed:1,intensity:1,density:1};
+ let fpsLimit=60,budget=0;
+ const ATOM_BASE=26;
+ let atoms=[];
+ // 预渲染一个发光点，避免每帧用 shadowBlur
+ function makeGlow(rgb){
+   const c=document.createElement('canvas');
+   c.width=c.height=64;
+   const g=c.getContext('2d');
+   const rg=g.createRadialGradient(32,32,0,32,32,32);
+   rg.addColorStop(0,'rgba('+rgb+',1)');
+   rg.addColorStop(.24,'rgba('+rgb+',.55)');
+   rg.addColorStop(1,'rgba('+rgb+',0)');
+   g.fillStyle=rg;
+   g.fillRect(0,0,64,64);
+   return c;
+ }
+ const glowCyan=makeGlow('140,236,255');
+ const glowPink=makeGlow('233,180,255');
+
+ // 三条椭圆轨道的贴图：椭圆长轴画在 0.42 的比例上，绘制时按 a.r 缩放
+ function makeOrbit(rgb){
+   const S=256;
+   const c=document.createElement('canvas');
+   c.width=c.height=S;
+   const g=c.getContext('2d');
+   g.translate(S/2,S/2);
+   g.strokeStyle='rgba('+rgb+',.5)';
+   g.lineWidth=1.4;
+   for(let k=0;k<3;k++){
+     g.save();
+     g.rotate(k*Math.PI/3);
+     g.beginPath();
+     g.ellipse(0,0,S*0.42,S*0.42*.36,0,0,Math.PI*2);
+     g.stroke();
+     g.restore();
+   }
+   return c;
+ }
+ const orbitCyan=makeOrbit('140,236,255');
+ const orbitPink=makeOrbit('233,180,255');
+ const ORBIT_RATIO=.42;
+ function makeAtom(spread){
+   const r=11+Math.random()*19;
+   return{
+     x:Math.random()*innerWidth,
+     y:spread?Math.random()*innerHeight:innerHeight+r*2,
+     r,
+     vx:(Math.random()-.5)*.22,
+     vy:-(.08+Math.random()*.2),
+     tilt:Math.random()*Math.PI,
+     spin:(.45+Math.random()*.85)*(Math.random()<.5?-1:1),
+     phase:Math.random()*Math.PI*2,
+     hue:Math.random()<.55?192:276,
+     alpha:.5+Math.random()*.42,
+     dying:0
+   };
+ }
+ function rebuildAtoms(){
+   const count=Math.max(3,Math.round(ATOM_BASE*params.density));
+   atoms=[];
+   for(let i=0;i<count;i++)atoms.push(makeAtom(true));
+ }
+ rebuildAtoms();
+
+ // ---- 可射击的靶标：比原子醒目，打中会爆开 ----
+ const TARGET_BASE=9;
+ let targets=[];
+ const TARGET_HUES=[190,280,332];
+
+ // 散景光斑：几乎不动，只极缓慢地上浮，像画面里本来就有的光点
+ function makeTarget(spread){
+   const margin=90;
+   return{
+     x:margin+Math.random()*Math.max(40,innerWidth-margin*2),
+     // 位置永远随机：重生时就地淡入，不从边缘飘进来
+     y:margin+Math.random()*Math.max(40,innerHeight-margin*2),
+     vx:(Math.random()-.5)*.24,
+     vy:-(.10+Math.random()*.20),
+     sway:.10+Math.random()*.18,
+     swaySpeed:.5+Math.random()*.7,
+     r:12+Math.random()*7,
+     hue:TARGET_HUES[Math.floor(Math.random()*TARGET_HUES.length)],
+     phase:Math.random()*Math.PI*2,
+     fade:spread?Math.random()*.55:0,
+     dead:0
+   };
+ }
+ function rebuildTargets(){
+   const count=Math.max(2,Math.round(TARGET_BASE*params.density));
+   targets=[];
+   for(let i=0;i<count;i++)targets.push(makeTarget(true));
+ }
+ rebuildTargets();
+
+ // 射击火花
+ const motes=[];
+ let lastParallaxX=-9999,lastParallaxY=-9999;
+ function applyPointer(x,y){
+   tx=x;ty=y;
+
+   // 视差和光标光晕只在移动超过 6px 时更新。
+   // 每改一次 CSS 变量，整个 #art / #depth 层都要重新合成，60Hz 全量更新太贵。
+   if(Math.abs(x-lastParallaxX)>6||Math.abs(y-lastParallaxY)>6){
+     lastParallaxX=x;
+     lastParallaxY=y;
+     root.style.setProperty('--mx',((x/innerWidth)-.5)*2);
+     root.style.setProperty('--my',((y/innerHeight)-.5)*2);
+     root.style.setProperty('--px',x+'px');
+     root.style.setProperty('--py',y+'px');
+   }
+
+   // 准星必须每帧跟手，不能降频
+   cursor.style.left=x+'px';
+   cursor.style.top=y+'px';
+ }
+ // 射击：瞄准镜后坐 + 中心爆闪 + 一圈短射线，另外甩几颗火花咬壳
+ function fire(x,y){
+   cursor.classList.remove('fire');
+   void cursor.offsetWidth;      // 强制重排，让同一位置的连续点击也能重放动画
+   cursor.classList.add('fire');
+   clearTimeout(fire.timer);
+   fire.timer=setTimeout(()=>cursor.classList.remove('fire'),320);
+
+   const count=10+Math.round(5*params.intensity);
+   for(let i=0;i<count;i++){
+     const ang=(Math.PI*2*i)/count+(Math.random()-.5)*.18;
+     const spd=4.2+Math.random()*4.4;
+     motes.push({
+       muzzle:true,
+       x,y,
+       vx:Math.cos(ang)*spd,
+       vy:Math.sin(ang)*spd,
+       life:1,
+       r:.9+Math.random()*1.5,
+       len:.5+Math.random()*.9
+     });
+   }
+   for(let i=0;i<5;i++){
+     const ang=Math.random()*Math.PI*2;
+     const spd=1.1+Math.random()*2.2;
+     motes.push({muzzle:false,x,y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd+.8,life:1,r:.7+Math.random()*1.2,len:0});
+   }
+
+   // 打中靶标：炸开一圈碎片 + 一圈冲击波，然后消失一段时间
+   for(const t of targets){
+     if(t.dead>0)continue;
+     const dist=Math.hypot(t.x-x,t.y-y);
+     if(dist>16)continue;
+
+     t.dead=1.8;
+
+     const pieces=18+Math.round(8*params.intensity);
+     for(let i=0;i<pieces;i++){
+       const ang=(Math.PI*2*i)/pieces+Math.random()*.3;
+       const spd=2.6+Math.random()*5.2;
+       motes.push({
+         muzzle:false,
+         hue:t.hue,
+         x:t.x+Math.cos(ang)*t.r*.5,
+         y:t.y+Math.sin(ang)*t.r*.5,
+         vx:Math.cos(ang)*spd,
+         vy:Math.sin(ang)*spd,
+         life:1,
+         r:1.2+Math.random()*2,
+         len:0
+       });
+     }
+
+     motes.push({ring:true,x:t.x,y:t.y,r:t.r,life:1,hue:t.hue});
+     motes.push({ring:true,x:t.x,y:t.y,r:t.r*.6,life:1,hue:t.hue});
+   }
+
+   // 打中原子：让它进入受击状态，并在原位炸出一圈同色碎片
+   for(const a of atoms){
+     if(a.dying>0)continue;
+     const dist=Math.hypot(a.x-x,a.y-y);
+     if(dist>12)continue;
+
+     a.dying=1;
+     const pieces=8+Math.round(5*params.intensity);
+     for(let i=0;i<pieces;i++){
+       const ang=Math.random()*Math.PI*2;
+       const spd=2.2+Math.random()*4.4;
+       const off=a.r*(.2+Math.random()*.5);
+       motes.push({
+         muzzle:false,
+         hue:a.hue,
+         x:a.x+Math.cos(ang)*off,
+         y:a.y+Math.sin(ang)*off,
+         vx:Math.cos(ang)*spd,
+         vy:Math.sin(ang)*spd+.6,
+         life:1,
+         r:1+Math.random()*1.7,
+         len:0
+       });
+     }
+   }
+ }
+ window.__flFire=fire;
+ window.__flAtoms=atoms;
+ window.__flTargets=targets;
+ window.__flPointer=applyPointer;   // 调试出口：控制台里可以直接触发一次射击
+
+ let pointerDown=false;
+ if(window.bridge){
+   window.bridge.onMessage((message)=>{
+     if(!message||typeof message!=='object')return;
+
+     if(message.type==='pointer'){
+       if(message.inside===false){pointerDown=false;return}
+       const x=message.x*innerWidth;
+       const y=message.y*innerHeight;
+       applyPointer(x,y);
+       const down=message.down===true;
+       if(down&&!pointerDown)fire(x,y);
+       pointerDown=down;
+       return;
+     }
+
+     if(message.type==='config'||message.type==='init'){
+       applyConfig(message.config);
+       return;
+     }
+
+     if(message.type==='state'){
+       if(message.paused){
+         if(raf){cancelAnimationFrame(raf);raf=0}
+       }else if(!raf&&!document.hidden){
+         lastTime=0;
+         raf=requestAnimationFrame(frame);
+       }
+     }
+   });
+ }
+
+ // 设置面板参数：speed 控节奏、intensity 控亮度、density 控原子数量
+ const PARAM_RANGE={speed:[.2,2.5],intensity:[.3,1.8],density:[.3,1.8]};
+ function applyConfig(config){
+   const wallpaper=config&&config.wallpaper;
+   if(!wallpaper)return;
+
+   const next=wallpaper.params||{};
+   const densityBefore=params.density;
+   Object.keys(PARAM_RANGE).forEach((key)=>{
+     const value=Number(next[key]);
+     if(Number.isFinite(value)){
+       const range=PARAM_RANGE[key];
+       params[key]=Math.min(range[1],Math.max(range[0],value));
+     }
+   });
+
+   const fps=Number(wallpaper.fps);
+   if(Number.isFinite(fps))fpsLimit=Math.max(0,Math.min(240,fps));
+
+   if(params.density!==densityBefore){
+     rebuildAtoms();
+     rebuildTargets();
+   }
+ }
+ // One animation loop: update interactive lighting at 30fps and pause off-screen.
+ let lastDraw=0, lastTime=0, idleStart=performance.now(), raf=0;
+ function frame(t){
+   raf=0;
+   if(document.hidden) return;
+   const dt=Math.min(48,lastTime?t-lastTime:16.7); lastTime=t;
+   px+=(tx-px)*.12;py+=(ty-py)*.12;
+   const fx=innerWidth*.69,fy=innerHeight*.34;
+   const d=Math.hypot(px-fx,py-fy), target=Math.max(0,1-d/260);
+   glow+=(target-glow)*.08;
+   root.style.setProperty('--glow',(glow*params.intensity).toFixed(2));
+   // 粒子层锁 30fps：光点移动很慢，60fps 只是白烧 GPU
+   const interval=Math.max(33,fpsLimit>0?1000/fpsLimit:0);
+   if(t-lastDraw>=interval-1.5){
+     lastDraw=t;
+     ctx.clearRect(0,0,innerWidth,innerHeight);
+     const spd=params.speed*(dt/16.7);
+     const itn=params.intensity;
+
+     // 原子：核 + 三条椭圆轨道 + 绕行电子
+     for(const a of atoms){
+       // 被打中的原子：放大淡出，然后从画面底部重新飘上来
+       let alive=1;
+       if(a.dying>0){
+         a.dying-=spd*.075;
+         if(a.dying<=0){
+           Object.assign(a,makeAtom(false));
+           continue;
+         }
+         alive=a.dying;
+       }
+
+       a.x+=a.vx*spd;
+       a.y+=a.vy*spd;
+       if(a.y< -a.r*2){a.y=innerHeight+a.r*2;a.x=Math.random()*innerWidth}
+       if(a.x< -a.r*2)a.x=innerWidth+a.r*2;
+       if(a.x>innerWidth+a.r*2)a.x=-a.r*2;
+       a.phase+=a.spin*spd*.03;
+
+       const sprite=a.hue<230?glowCyan:glowPink;
+       const grow=1+(1-alive)*.9;
+       const alpha=a.alpha*itn*(.72+.28*Math.sin(a.phase*1.7))*alive;
+
+       ctx.save();
+       ctx.translate(a.x,a.y);
+       ctx.rotate(a.tilt);
+
+       // 三条轨道一次画完（预渲染贴图），省掉每帧三次椭圆描边
+       const orbit=a.hue<230?orbitCyan:orbitPink;
+       const orbitSize=a.r*grow/ORBIT_RATIO;
+       ctx.globalCompositeOperation='lighter';
+       ctx.globalAlpha=Math.min(1,alpha*.95);
+       ctx.drawImage(orbit,-orbitSize/2,-orbitSize/2,orbitSize,orbitSize);
+
+       // 电子沿着各自的轨道跑
+       for(let k=0;k<3;k++){
+         const ang=a.phase+k*Math.PI*2/3;
+         const ex=Math.cos(ang)*a.r*grow;
+         const ey=Math.sin(ang)*a.r*.36*grow;
+         const es=6;
+         ctx.globalAlpha=Math.min(1,alpha);
+         ctx.drawImage(sprite,ex-es,ey-es,es*2,es*2);
+       }
+
+       const ns=8;
+       ctx.globalCompositeOperation='lighter';
+       ctx.globalAlpha=Math.min(1,alpha*.9);
+       ctx.drawImage(sprite,-ns,-ns,ns*2,ns*2);
+       ctx.globalAlpha=1;
+       ctx.globalCompositeOperation='source-over';
+       ctx.restore();
+     }
+     // 可击落的小型飞行器：霓虹机体 + 翼灯 + 推进器尾焰，和壁纸里那架无人机同族
+     for(const t of targets){
+       if(t.dead>0){
+         t.dead-=spd*.02;
+         if(t.dead<=0)Object.assign(t,makeTarget(false));
+         continue;
+       }
+
+       t.phase+=spd*.05;
+       // 慢慢亮起来，别凭空蹦出来（约 0.8 秒）
+       t.fade=Math.min(1,t.fade+spd*.008);
+       // 像光尘一样飘：主漂移 + 一点横向摇摆，别走成直线
+       t.x+=(t.vx+Math.sin(t.phase*t.swaySpeed)*t.sway)*spd;
+       t.y+=t.vy*spd;
+
+       // 飘出画面就换个位置再上来
+       if(t.y<-90||t.x<-140||t.x>innerWidth+140){
+         Object.assign(t,makeTarget(true));
+         continue;
+       }
+
+       const glow=t.hue<230?glowCyan:glowPink;
+       const breathe=.78+.22*Math.sin(t.phase*1.5);
+
+       ctx.save();
+       ctx.globalCompositeOperation='lighter';
+
+       // 外层柔光
+       const gs=t.r*2.6*breathe;
+       ctx.globalAlpha=Math.min(1,.34*itn*breathe*t.fade*t.fade);
+       ctx.drawImage(glow,t.x-gs,t.y-gs,gs*2,gs*2);
+
+       // 内层更亮一点，有层次但不出硬边
+       const cs=t.r*.85*breathe;
+       ctx.globalAlpha=Math.min(1,.48*itn*breathe*t.fade*t.fade);
+       ctx.drawImage(glow,t.x-cs,t.y-cs,cs*2,cs*2);
+
+       // 针尖大的核心：给精确瞄准一个落点参考，不破坏柔和感
+       ctx.globalAlpha=Math.min(1,.6*itn*t.fade*t.fade);
+       ctx.fillStyle='hsla('+t.hue+',100%,97%,.9)';
+       ctx.beginPath();
+       ctx.arc(t.x,t.y,1.9,0,Math.PI*2);
+       ctx.fill();
+
+       ctx.globalAlpha=1;
+       ctx.globalCompositeOperation='source-over';
+       ctx.restore();
+     }
+
+     // 射击火花：枪口焰是朝外射的短线，弹壳火花是拖尾小点
+     ctx.globalCompositeOperation='lighter';
+     for(let i=motes.length-1;i>=0;i--){
+       const m=motes[i];
+       const step=(dt/16.7)*params.speed;
+       m.x+=m.vx*step;
+       m.y+=m.vy*step;
+       m.vx*=.955;
+       m.vy*=.955;
+       m.life-=(m.muzzle?.055:.02)*step;
+       if(m.life<=0){motes.splice(i,1);continue}
+
+       const alpha=Math.max(0,m.life);
+
+       if(m.ring){
+         // 冲击波：快速扩散的圆环
+         m.r+=9*step;
+         m.life-=.035*step;
+         if(m.life<=0){motes.splice(i,1);continue}
+         ctx.globalAlpha=1;
+         ctx.strokeStyle='hsla('+m.hue+',100%,80%,'+(alpha*.85).toFixed(3)+')';
+         ctx.lineWidth=2.6*alpha;
+         ctx.beginPath();
+         ctx.arc(m.x,m.y,m.r,0,Math.PI*2);
+         ctx.stroke();
+         continue;
+       }
+
+       if(m.muzzle){
+         // 枪口焰：沿运动方向拉一条亮线
+         const tailX=m.x-m.vx*m.len*3.1;
+         const tailY=m.y-m.vy*m.len*3.1;
+         const grad=ctx.createLinearGradient(m.x,m.y,tailX,tailY);
+         grad.addColorStop(0,'rgba(220,250,255,'+alpha.toFixed(3)+')');
+         grad.addColorStop(.45,'rgba(130,225,255,'+(alpha*.6).toFixed(3)+')');
+         grad.addColorStop(1,'rgba(120,200,255,0)');
+         ctx.globalAlpha=1;
+         ctx.strokeStyle=grad;
+         ctx.lineWidth=m.r*1.7;
+         ctx.lineCap='round';
+         ctx.beginPath();
+         ctx.moveTo(m.x,m.y);
+         ctx.lineTo(tailX,tailY);
+         ctx.stroke();
+       }else{
+         ctx.globalAlpha=alpha;
+         ctx.fillStyle=m.hue?'hsl('+m.hue+',100%,80%)':'#d9f7ff';
+         ctx.beginPath();
+         ctx.arc(m.x,m.y,m.r*alpha,0,Math.PI*2);
+         ctx.fill();
+       }
+     }
+     ctx.globalAlpha=1;
+     ctx.globalCompositeOperation='source-over';
+     ctx.globalAlpha=1;
+   }
+   if(!reduce && t-idleStart>250){
+     const centered=Math.abs(tx-innerWidth/2)<3&&Math.abs(ty-innerHeight/2)<3;
+     if(centered){
+       const q=t/1000;
+       root.style.setProperty('--mx',(Math.sin(q*.19)*.12).toFixed(3));
+       root.style.setProperty('--my',(Math.cos(q*.16)*.1).toFixed(3));
+     }
+   }
+   raf=requestAnimationFrame(frame);
+ }
+ function start(){if(!raf&&!document.hidden){lastTime=0;raf=requestAnimationFrame(frame)}}
+ function stop(){if(raf){cancelAnimationFrame(raf);raf=0}}
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else start()});
+ start();
+})();
+</script>
+</body>
+</html>
