@@ -464,6 +464,53 @@ h1.gap {
   background: var(--accent);
 }
 
+/* 帧率上限：预设按钮 + 自定义输入 */
+.fps-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fps-custom {
+  width: 86px;
+  padding: 5px 8px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  transition: border-color 0.12s ease;
+  /* 去掉数字输入框的上下箭头，避免挤在小框里 */
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.fps-custom::-webkit-outer-spin-button,
+.fps-custom::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.fps-custom::placeholder {
+  color: var(--text-dim);
+}
+
+.fps-custom:hover {
+  border-color: #38405a;
+}
+
+.fps-custom:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+/* 输入了自定义值时，让这个框看起来是"选中"状态 */
+.fps-custom.filled {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;

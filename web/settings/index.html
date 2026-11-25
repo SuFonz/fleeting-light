@@ -65,13 +65,26 @@
           <div class="row">
             <div class="row-label">
               帧率上限
-              <span class="hint">不限 = 跟随显示器刷新率</span>
+              <span class="hint">不限 = 跟随显示器刷新率；也可以自己填 1–240</span>
             </div>
-            <div class="segmented" id="fpsGroup">
-              <button type="button" data-fps="30">30</button>
-              <button type="button" data-fps="60">60</button>
-              <button type="button" data-fps="120">120</button>
-              <button type="button" data-fps="0">不限</button>
+            <div class="row-side fps-side">
+              <div class="segmented" id="fpsGroup">
+                <button type="button" data-fps="30">30</button>
+                <button type="button" data-fps="60">60</button>
+                <button type="button" data-fps="120">120</button>
+                <button type="button" data-fps="0">不限</button>
+              </div>
+              <input
+                type="number"
+                id="fpsCustom"
+                class="fps-custom"
+                min="1"
+                max="240"
+                step="1"
+                inputmode="numeric"
+                placeholder="自定义"
+                title="自定义帧率上限（1–240），回车或失焦生效"
+              />
             </div>
           </div>
 

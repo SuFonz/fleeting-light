@@ -202,12 +202,34 @@ function renderWallpapers() {
   }
 }
 
-function renderParams() {
-  const wallpaper = (view.config && view.config.wallpaper) || {};
+// 帧率预设：这几个值由按钮负责，其余值走自定义输入框
+const FPS_PRESETS = [0, 30, 60, 120];
+const FPS_MIN = 1;
+const FPS_MAX = 240;
+
+function renderFps(wallpaper) {
   const fps = Number.isFinite(wallpaper.fps) ? wallpaper.fps : 60;
+
   for (const button of $$('#fpsGroup button')) {
     button.classList.toggle('active', Number(button.dataset.fps) === fps);
   }
+
+  const custom = $('#fpsCustom');
+  if (!custom) {
+    return;
+  }
+
+  const isPreset = FPS_PRESETS.indexOf(fps) >= 0;
+  // 正在输入时不要覆盖用户手上的值
+  if (document.activeElement !== custom) {
+    custom.value = isPreset ? '' : String(fps);
+  }
+  custom.classList.toggle('filled', !isPreset);
+}
+
+function renderParams() {
+  const wallpaper = (view.config && view.config.wallpaper) || {};
+  renderFps(wallpaper);
 
   const params = wallpaper.params || {};
   const speed = Number.isFinite(params.speed) ? params.speed : 1;
@@ -345,6 +367,46 @@ function bindEvents() {
       queuePatch({ wallpaper: { fps: Number(button.dataset.fps) } });
       for (const other of $$('#fpsGroup button')) {
         other.classList.toggle('active', other === button);
+      }
+      // 选了预设就把自定义输入清掉
+      const custom = $('#fpsCustom');
+      if (custom) {
+        custom.value = '';
+        custom.classList.remove('filled');
+      }
+    });
+  }
+
+  const fpsCustom = $('#fpsCustom');
+  if (fpsCustom) {
+    fpsCustom.addEventListener('change', () => {
+      const raw = fpsCustom.value.trim();
+      if (raw === '') {
+        return;
+      }
+
+      let value = Math.round(Number(raw));
+      if (!Number.isFinite(value)) {
+        fpsCustom.value = '';
+        return;
+      }
+
+      value = Math.max(FPS_MIN, Math.min(FPS_MAX, value));
+      fpsCustom.value = String(value);
+      fpsCustom.classList.add('filled');
+
+      // 自定义值生效时，预设按钮全部取消选中
+      for (const other of $$('#fpsGroup button')) {
+        other.classList.remove('active');
+      }
+      queuePatch({ wallpaper: { fps: value } });
+    });
+
+    // Enter 直接提交，不用先点别处
+    fpsCustom.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        fpsCustom.blur();
       }
     });
   }
