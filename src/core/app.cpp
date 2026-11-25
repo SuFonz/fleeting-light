@@ -12,6 +12,8 @@ namespace {
 constexpr const char* kBuiltinManifest = "wallpapers/manifest.json";
 constexpr const char* kUserRefPrefix = "user:";
 constexpr const char* kIndexFile = "index.html";
+// 完全没有任何壁纸时的最后兜底（正常情况用不到，防止空列表导致白屏）
+constexpr const char* kFallbackWallpaper = "matrix";
 
 // id 只保留 ASCII：它同时是文件夹名和 URL 路径，中文/空格走显示名就行
 std::string sanitize_id(std::string_view raw) {
@@ -49,13 +51,13 @@ bool valid_user_id(const std::string& id) {
   return true;
 }
 
-std::string make_state_json(bool paused, const std::string& reason, bool settings_open, bool user_paused) {
+std::string make_state_json(bool paused, const std::string& reason, bool settings_open, bool enabled) {
   Json s = Json::object();
   s["type"] = "state";
   s["paused"] = paused;
   s["reason"] = reason;
   s["settingsOpen"] = settings_open;
-  s["userPaused"] = user_paused;
+  s["enabled"] = enabled;
   return s.dump();
 }
 
@@ -83,6 +85,14 @@ std::string App::wallpaper_display_name(std::string_view ref) const {
   return std::string(ref);
 }
 
+// 默认壁纸 = 列表里第一个内置壁纸；列表为空时退回 kFallbackWallpaper
+std::string App::default_wallpaper_ref() const {
+  for (const WallpaperEntry& entry : wallpapers_) {
+    if (!entry.user) return entry.id;
+  }
+  return kFallbackWallpaper;
+}
+
 void App::start() {
   std::string error;
   if (!config_.load(&error) && !error.empty()) {
@@ -90,17 +100,21 @@ void App::start() {
   } else {
     log_info("配置已载入: " + config_.path());
   }
-  in_user_paused_ = config_.user_paused();
+  in_disabled_ = !config_.wallpaper_enabled();
   load_wallpaper_manifest();
 
   // 配置里指的用户壁纸可能已经被手动删掉了
   const std::string ref = config_.wallpaper_id();
-  if (is_user_ref(ref)) {
+  // 配置里记的壁纸可能已经被删掉了（内置的目录被移除、或导入的被删），
+  // 这里统一兜底到列表里第一个内置壁纸，避免启动后白屏
+  {
+    const std::string current = config_.wallpaper_id();
     const bool found = std::any_of(wallpapers_.begin(), wallpapers_.end(),
-                                   [&ref](const WallpaperEntry& entry) { return entry.ref() == ref; });
+                                   [&current](const WallpaperEntry& entry) { return entry.ref() == current; });
     if (!found) {
-      log_warn("壁纸 " + ref + " 已不存在，回退到内置壁纸");
-      config_.set_wallpaper_id("aurora");
+      const std::string fallback = default_wallpaper_ref();
+      log_warn("壁纸 " + current + " 已不存在，回退到 " + fallback);
+      config_.set_wallpaper_id(fallback);
     }
   }
 
@@ -136,7 +150,7 @@ void App::load_wallpaper_manifest() {
     }
   }
   if (wallpapers_.empty()) {
-    wallpapers_.push_back(WallpaperEntry{"aurora", "极光", "内置", false});
+    wallpapers_.push_back(WallpaperEntry{kFallbackWallpaper, "数字雨", "内置", false});
   }
 
   // 2) 用户导入的壁纸：扫描 <data>/wallpapers 下的子目录
@@ -200,8 +214,8 @@ void App::detach_settings() { settings_ = nullptr; }
 
 void App::recompute_state() {
   std::string reason;
-  if (in_user_paused_) {
-    reason = "user";
+  if (in_disabled_) {
+    reason = "disabled";
   } else if (in_suspend_) {
     reason = "suspend";
   } else if (in_locked_ && config_.pause_on_lock()) {
@@ -217,8 +231,8 @@ void App::recompute_state() {
   state_paused_ = paused;
   pause_reason_ = reason;
 
-  // 只有“看不见”的暂停才真正隐藏视图；用户手动暂停要留着画面
-  const bool should_suspend = paused && reason != "user";
+  // 被用户禁用时壁纸要彻底消失（露出桌面），其余情况只是停渲染
+  const bool should_suspend = paused;
   if (should_suspend != suspended_) {
     suspended_ = should_suspend;
     apply_suspension();
@@ -236,7 +250,7 @@ void App::apply_suspension() {
   if (!started_) return;
   host_.set_wallpaper_suspended(suspended_);
 }void App::broadcast_state() {
-  const std::string state = make_state_json(state_paused_, pause_reason_, in_settings_open_, in_user_paused_);
+  const std::string state = make_state_json(state_paused_, pause_reason_, in_settings_open_, !in_disabled_);
   if (wallpaper_) wallpaper_->send(state);
   if (settings_) settings_->send(state);
 }
@@ -255,7 +269,7 @@ void App::push_wallpaper_init() {
   msg["state"]["paused"] = state_paused_;
   msg["state"]["reason"] = pause_reason_;
   msg["state"]["settingsOpen"] = in_settings_open_;
-  msg["state"]["userPaused"] = in_user_paused_;
+  msg["state"]["enabled"] = !in_disabled_;
   msg["wallpaperId"] = config_.wallpaper_id();
   msg["fps"] = config_.wallpaper_fps();
   msg["version"] = env::app_version();
@@ -272,7 +286,7 @@ void App::push_settings_init() {
   state["paused"] = state_paused_;
   state["reason"] = pause_reason_;
   state["settingsOpen"] = in_settings_open_;
-  state["userPaused"] = in_user_paused_;
+  state["enabled"] = !in_disabled_;
   msg["state"] = state;
 
   Json info = Json::object();
@@ -341,14 +355,15 @@ void App::on_settings_closed() {
   recompute_state();
 }
 
-void App::toggle_user_pause() { set_user_paused(!in_user_paused_); }
+void App::toggle_wallpaper_enabled() { set_wallpaper_enabled(in_disabled_); }
 
-void App::set_user_paused(bool paused) {
-  if (in_user_paused_ == paused) return;
-  in_user_paused_ = paused;
-  config_.set_user_paused(paused);
+void App::set_wallpaper_enabled(bool enabled) {
+  const bool disabled = !enabled;
+  if (in_disabled_ == disabled) return;
+  in_disabled_ = disabled;
+  config_.set_wallpaper_enabled(enabled);
   recompute_state();
-  push_settings_toast("info", paused ? "壁纸已暂停" : "壁纸已继续");
+  push_settings_toast("info", enabled ? "壁纸已启用" : "壁纸已禁用，桌面背景已恢复");
 }
 
 void App::reload_wallpaper() {
@@ -402,7 +417,7 @@ void App::reset_config() {
     push_settings_toast("error", "重置失败: " + error);
     return;
   }
-  in_user_paused_ = config_.user_paused();
+  in_disabled_ = !config_.wallpaper_enabled();
   if (wallpaper_) {
     wallpaper_->navigate(wallpaper_url());
     push_wallpaper_init();
@@ -496,7 +511,7 @@ void App::remove_wallpaper(std::string_view ref) {
 
   const bool was_active = (config_.wallpaper_id() == std::string(ref));
   load_wallpaper_manifest();
-  if (was_active) switch_wallpaper("aurora");
+  if (was_active) switch_wallpaper(default_wallpaper_ref());
   push_settings_init();
   push_settings_toast("success", "已移除壁纸");
   log_info("移除壁纸: " + std::string(ref));
@@ -587,8 +602,8 @@ void App::handle_settings_message(std::string_view json) {
     push_settings_toast("success", "设置已保存");
     return;
   }
-  if (type == "set_paused") {
-    set_user_paused(msg.at("paused").as_bool(!in_user_paused_));
+  if (type == "set_enabled") {
+    set_wallpaper_enabled(msg.at("enabled").as_bool(!in_disabled_));
     return;
   }
   if (type == "action") {

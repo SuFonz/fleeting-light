@@ -84,7 +84,7 @@ std::wstring tooltip_for(const core::App& core) {
   std::wstring text = L"Fleeting Light";
   if (!core.paused()) return text + L" · 运行中";
   const std::string& reason = core.pause_reason();
-  if (reason == "user") return text + L" · 已暂停";
+  if (reason == "disabled") return text + L" · 已禁用";
   if (reason == "fullscreen") return text + L" · 全屏遮挡，暂停中";
   if (reason == "lock") return text + L" · 锁屏，暂停中";
   if (reason == "suspend") return text + L" · 休眠，暂停中";
@@ -389,7 +389,7 @@ void WinApp::show_tray_menu(POINT screen_point) {
   HMENU menu = CreatePopupMenu();
   AppendMenuW(menu, MF_STRING, kMenuSettings, L"打开设置面板\tCtrl+Alt+F9");
   AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-  AppendMenuW(menu, MF_STRING | (core_.paused() ? MF_CHECKED : MF_UNCHECKED), kMenuPause, L"暂停壁纸");
+  AppendMenuW(menu, MF_STRING | (core_.enabled() ? MF_CHECKED : MF_UNCHECKED), kMenuPause, L"显示壁纸");
   AppendMenuW(menu, MF_STRING, kMenuReload, L"重新加载壁纸");
   AppendMenuW(menu, MF_STRING, kMenuDevTools, L"壁纸开发者工具");
   AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
@@ -409,7 +409,7 @@ void WinApp::show_tray_menu(POINT screen_point) {
 void WinApp::handle_tray_command(UINT command) {
   switch (command) {
     case kMenuSettings: open_settings(); break;
-    case kMenuPause: core_.toggle_user_pause(); break;
+    case kMenuPause: core_.toggle_wallpaper_enabled(); break;
     case kMenuReload: core_.reload_wallpaper(); break;
     case kMenuDevTools: open_wallpaper_devtools(); break;
     case kMenuAutostart: set_autostart(!autostart_enabled()); break;

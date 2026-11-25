@@ -76,8 +76,8 @@ class App {
   void on_settings_closed();
 
   // ---- 托盘/快捷键入口 ----
-  void toggle_user_pause();
-  void set_user_paused(bool paused);
+  void toggle_wallpaper_enabled();
+  void set_wallpaper_enabled(bool enabled);
   void reload_wallpaper();
   void reset_config();
 
@@ -92,6 +92,7 @@ class App {
   const Json& config() const { return config_.data(); }
   const std::string& config_path() const;
   bool paused() const { return state_paused_; }
+  bool enabled() const { return !in_disabled_; }
   const std::string& pause_reason() const { return pause_reason_; }
   std::string wallpaper_url() const;
   std::vector<WallpaperEntry> wallpapers() const { return wallpapers_; }
@@ -99,6 +100,7 @@ class App {
 
  private:
   void load_wallpaper_manifest();
+  std::string default_wallpaper_ref() const;
   void recompute_state();
   void apply_suspension();
   void broadcast_config();
@@ -121,7 +123,7 @@ class App {
   std::vector<WallpaperEntry> wallpapers_;
 
   // 输入状态
-  bool in_user_paused_ = false;
+  bool in_disabled_ = false;
   bool in_locked_ = false;
   bool in_fullscreen_ = false;
   bool in_suspend_ = false;

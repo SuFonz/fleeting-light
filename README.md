@@ -39,17 +39,16 @@ flowchart TD
 - One bridge for everything: the frontend only knows `bridge.send()` / `bridge.onMessage()` and
   never learns whether it runs on WebView2 or WebKitGTK
 - Power saving: pauses rendering when a fullscreen app is active, the session is locked or the
-  machine suspends (and actually hides the view to release the GPU); a manual pause only freezes
-  the picture
+  machine suspends, and hides the view to release the GPU
+- Enable / disable the wallpaper: when disabled the view is hidden entirely, so the normal
+  desktop background shows through until you enable it again
 - Settings apply instantly and are persisted; switching wallpapers needs no restart
-- Tray menu (open panel / pause / reload wallpaper / devtools / autostart / config folder / quit)
+- Tray menu (open panel / show wallpaper / reload wallpaper / devtools / autostart / config folder / quit)
 - Single instance: launching again just raises the existing settings panel
 - Rebuilds the wallpaper view automatically after an Explorer restart (`TaskbarCreated`)
-- 10 built-in demo wallpapers: Aurora, Ripple, Spotlight, Swarm, Flow, Starfield, Neon, Mist,
-  Bokeh, Matrix (pure Canvas 2D, no external assets)
-- **Interactive wallpapers**: the cursor position (and left button) is streamed to the page, so
-  wallpapers can react to the mouse — Ripple spawns water rings, Spotlight follows the cursor,
-  Swarm is a particle galaxy that bursts on click
+- Built-in wallpaper: **Matrix** (rain of green glyphs, pure Canvas 2D, no external assets)
+- **Interactive wallpapers**: the cursor position (and left button) is streamed to the page as a
+  `pointer` message, so a wallpaper can react to the mouse
 - **Import your own wallpaper**: a single HTML file, or a whole web folder (Vite/Webpack build
   output); the list is grouped into "Built-in" and "My wallpapers"
 
@@ -152,8 +151,8 @@ node .cache/tools/cdp-eval.mjs settings "document.title"  # evaluate JS inside a
 {
   "version": 1,
   "wallpaper": {
-    "id": "aurora",
-    "paused": false,
+    "id": "matrix",
+    "enabled": true,
     "fps": 60,
     "params": { "speed": 1, "intensity": 1, "density": 1 }
   },
@@ -168,8 +167,10 @@ node .cache/tools/cdp-eval.mjs settings "document.title"  # evaluate JS inside a
 }
 ```
 
+- `wallpaper.enabled`: `false` hides the wallpaper view completely (desktop background shows);
+  the old `paused` key is migrated automatically
 - `wallpaper.fps`: 0 = unlimited (follow the display), 1–240 = cap
-- `wallpaper.id`: a plain id such as `aurora` for built-in wallpapers; imported ones carry a
+- `wallpaper.id`: a plain id such as `matrix` for built-in wallpapers; imported ones carry a
   prefix, e.g. `user:my-site`
 - `wallpaper.params`: forwarded to the wallpaper page
   - `speed`: animation speed, 0.2–2.5
@@ -214,7 +215,7 @@ web/
   shared/wallpaper-runtime.js wallpaper runtime: canvas, DPR, frame cap, pause
   shared/wallpaper.css
   wallpapers/manifest.json   wallpaper list (the settings panel renders from it)
-  wallpapers/aurora|ripple|spotlight|swarm|flow|starfield|neon|mist|bokeh|matrix/
+  wallpapers/matrix/            the built-in wallpaper (index.html + matrix.js)
   settings/index.html|settings.css|settings.js   panel: Wallpapers / Params / Behavior / About
 tools/
   gen_webview2_uuids.cmake   generate __CRT_UUID_DECL specializations from WebView2.h
@@ -229,12 +230,12 @@ tools/
 
 | Message | Meaning |
 | --- | --- |
-| `{"type":"init","config":{…},"state":{…},"wallpaperId":"aurora","fps":60,"version":"0.1.0"}` | full state after load/reload |
+| `{"type":"init","config":{…},"state":{…},"wallpaperId":"matrix","fps":60,"version":"0.1.0"}` | full state after load/reload |
 | `{"type":"config","config":{…}}` | configuration changed |
-| `{"type":"state","paused":false,"reason":"","settingsOpen":false,"userPaused":false}` | pause state |
+| `{"type":"state","paused":false,"reason":"","settingsOpen":false,"enabled":true}` | pause / enabled state |
 | `{"type":"pointer","x":0.51,"y":0.32,"inside":true,"down":false}` | cursor position, normalized to the wallpaper view (0..1), plus left-button state |
 
-`reason` is one of `user` / `fullscreen` / `lock` / `suspend` / `settings`.
+`reason` is one of `disabled` / `fullscreen` / `lock` / `suspend` / `settings`.
 
 The `pointer` message is only sent while `app.pointerTracking` is on, and only when the position
 actually changed (≈50 Hz polling, deduplicated). `bootWallpaper` stores it in `state.pointer` and
@@ -244,7 +245,7 @@ calls the wallpaper's optional `onPointer(pointer)` hook.
 
 | Message | Meaning |
 | --- | --- |
-| `{"type":"ready","id":"aurora"}` | page ready, core replies with `init` |
+| `{"type":"ready","id":"matrix"}` | page ready, core replies with `init` |
 | `{"type":"request_init"}` | ask for `init` again |
 | `{"type":"log","level":"info","message":"…"}` | write into the core log |
 | `{"type":"stats","fps":59.8}` | frame stats (reported when `window.__flDebug = true`) |
@@ -259,7 +260,7 @@ list, autostart state), `config`, `state`, `toast`.
 | Message | Meaning |
 | --- | --- |
 | `{"type":"update","config":{…}}` | deep-merge into the config and persist (`null` deletes a key) |
-| `{"type":"set_paused","paused":true}` | manual pause / resume |
+| `{"type":"set_enabled","enabled":false}` | show / hide the wallpaper |
 | `{"type":"action","name":"restart_wallpaper"}` | other actions, see below |
 | `{"type":"request_init"}` | pull the full state again |
 

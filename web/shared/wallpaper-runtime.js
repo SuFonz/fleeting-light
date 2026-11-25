@@ -1,8 +1,8 @@
-// 壁纸通用运行时：画布/DPR/帧率限制/暂停/与核心通信，壁纸自己只需要实现 draw()。
+﻿// 壁纸通用运行时：画布/DPR/帧率限制/暂停/与核心通信，壁纸自己只需要实现 draw()。
 //
 //   import { bootWallpaper } from '../../shared/wallpaper-runtime.js';
 //   bootWallpaper({
-//     id: 'aurora',
+//     id: 'matrix',
 //     defaults: { speed: 1, intensity: 1 },
 //     create({ ctx, width, height, dpr, params }) {
 //       return {

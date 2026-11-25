@@ -11,8 +11,8 @@ const Json& ConfigCenter::defaults() {
   static const Json kDefaults = [] {
     Json j = Json::object();
     j["version"] = 1;
-    j["wallpaper"]["id"] = "aurora";
-    j["wallpaper"]["paused"] = false;
+    j["wallpaper"]["id"] = "matrix";
+    j["wallpaper"]["enabled"] = true;
     j["wallpaper"]["fps"] = 60;
     j["wallpaper"]["params"] = Json::object();
     j["app"]["startWithWindows"] = false;
@@ -32,7 +32,7 @@ Json ConfigCenter::normalize(const Json& input) {
 
   // wallpaper.id：非空字符串
   std::string id = out.get_path("wallpaper.id").as_string();
-  if (id.empty()) id = "aurora";
+  if (id.empty()) id = "matrix";
   out["wallpaper"]["id"] = id;
 
   // fps：0 表示跟随显示器，1..240 为有效帧率上限
@@ -40,9 +40,18 @@ Json ConfigCenter::normalize(const Json& input) {
   fps = std::clamp<long long>(fps, 0, 240);
   out["wallpaper"]["fps"] = static_cast<int>(fps);
 
+  // 兼容旧配置：以前是 "paused": true，语义正好反过来
+  {
+    Json& wp = out["wallpaper"];
+    if (wp.contains("paused")) {
+      if (!wp.contains("enabled")) wp["enabled"] = !wp["paused"].as_bool(false);
+      wp.erase("paused");
+    }
+  }
+
   // 布尔项强制类型（用户手改配置写错类型时回退到默认值）
-  const char* bool_paths[] = {"wallpaper.paused",     "app.startWithWindows",      "app.pauseOnFullscreen",
-                              "app.pauseOnLock",      "app.pauseWhenSettingsOpen", "app.devTools",
+  const char* bool_paths[] = {"wallpaper.enabled",  "app.startWithWindows",      "app.pauseOnFullscreen",
+                              "app.pauseOnLock",    "app.pauseWhenSettingsOpen", "app.devTools",
                               "app.pointerTracking"};
   for (const char* path : bool_paths) {
     const std::string_view p{path};
@@ -101,11 +110,11 @@ bool ConfigCenter::reset_to_defaults(std::string* error) {
   return save(error);
 }
 
-std::string ConfigCenter::wallpaper_id() const { return data_.get_path("wallpaper.id").as_string("aurora"); }
+std::string ConfigCenter::wallpaper_id() const { return data_.get_path("wallpaper.id").as_string("matrix"); }
 
 int ConfigCenter::wallpaper_fps() const { return static_cast<int>(data_.get_path("wallpaper.fps").as_int(60)); }
 
-bool ConfigCenter::user_paused() const { return data_.get_path("wallpaper.paused").as_bool(false); }
+bool ConfigCenter::wallpaper_enabled() const { return data_.get_path("wallpaper.enabled").as_bool(true); }
 
 bool ConfigCenter::pause_on_fullscreen() const { return data_.get_path("app.pauseOnFullscreen").as_bool(true); }
 
@@ -121,10 +130,10 @@ bool ConfigCenter::start_with_windows() const { return data_.get_path("app.start
 
 bool ConfigCenter::pointer_tracking() const { return data_.get_path("app.pointerTracking").as_bool(true); }
 
-void ConfigCenter::set_user_paused(bool paused) {
-  data_["wallpaper"]["paused"] = paused;
+void ConfigCenter::set_wallpaper_enabled(bool enabled) {
+  data_["wallpaper"]["enabled"] = enabled;
   std::string error;
-  if (!save(&error)) log_warn("保存暂停状态失败: " + error);
+  if (!save(&error)) log_warn("保存壁纸启用状态失败: " + error);
 }
 
 void ConfigCenter::set_wallpaper_id(std::string id) {

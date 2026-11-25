@@ -2,20 +2,11 @@
 const bridge = window.bridge;
 
 const SWATCHES = {
-  aurora: 'linear-gradient(120deg, #05201c 0%, #0e5a54 45%, #3b2f7a 100%)',
-  ripple: 'radial-gradient(circle at 46% 48%, #1c5a66 0%, #0a2430 42%, #040a12 100%)',
-  spotlight: 'radial-gradient(circle at 40% 38%, #fff1d2 0%, #6b5a48 20%, #0a0d16 62%)',
-  swarm: 'radial-gradient(circle at 55% 45%, #c8f4ff 0%, #6a6cd8 30%, #0a0b16 74%)',
-  flow: 'linear-gradient(120deg, #05070e 0%, #17324a 45%, #8be9d6 100%)',
-  starfield: 'linear-gradient(120deg, #04060d 0%, #16224a 55%, #9fc4ff 100%)',
-  neon: 'linear-gradient(180deg, #3a0b4f 0%, #8b1a63 52%, #ff5a7a 76%, #140f24 100%)',
-  mist: 'linear-gradient(180deg, #22305c 0%, #6b5a7e 44%, #c4776f 72%, #10121c 100%)',
-  bokeh: 'radial-gradient(circle at 32% 34%, #ffd9a0 0%, #b0789a 22%, #2a2540 55%, #0a0d18 100%)',
   matrix: 'linear-gradient(120deg, #040807 0%, #0d3a1f 55%, #3ef08a 100%)',
 };
 
 const PAUSE_REASON_TEXT = {
-  user: '已手动暂停',
+  disabled: '已禁用，桌面背景已恢复',
   fullscreen: '全屏遮挡，暂停中',
   lock: '锁屏，暂停中',
   suspend: '系统休眠，暂停中',
@@ -196,7 +187,7 @@ function renderStatus() {
   if (!status) {
     pill.classList.add('offline');
     text.textContent = bridge && bridge.connected ? '已连接' : '未连接（预览模式）';
-    button.textContent = '暂停';
+    button.textContent = '禁用';
     return;
   }
 
@@ -206,7 +197,7 @@ function renderStatus() {
   } else {
     text.textContent = '运行中';
   }
-  button.textContent = status.userPaused ? '继续' : '暂停';
+  button.textContent = status.enabled === false ? '启用' : '禁用';
 }
 
 function renderInfo() {
@@ -318,8 +309,9 @@ function bindEvents() {
   }
 
   $('#pauseButton').addEventListener('click', () => {
-    const paused = !(view.status && view.status.userPaused);
-    send({ type: 'set_paused', paused });
+    // 显示中就禁用，禁用中就启用
+    const currentlyEnabled = !(view.status && view.status.enabled === false);
+    send({ type: 'set_enabled', enabled: !currentlyEnabled });
   });
 
   $('#resetButton').addEventListener('click', () => send({ type: 'action', name: 'reset_config' }));

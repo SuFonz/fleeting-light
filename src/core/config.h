@@ -2,7 +2,7 @@
 // 配置结构（见 defaults()）：
 // {
 //   "version": 1,
-//   "wallpaper": { "id": "aurora", "paused": false, "fps": 60, "params": {} },
+//   "wallpaper": { "id": "matrix", "paused": false, "fps": 60, "params": {} },
 //   "app": { "startWithWindows": false, "pauseOnFullscreen": true, "pauseOnLock": true,
 //            "pauseWhenSettingsOpen": false, "devTools": false }
 // }
@@ -33,7 +33,7 @@ class ConfigCenter {
   // ---- 常用字段 ----
   std::string wallpaper_id() const;
   int wallpaper_fps() const;
-  bool user_paused() const;
+  bool wallpaper_enabled() const;
   bool pause_on_fullscreen() const;
   bool pause_on_lock() const;
   bool pause_when_settings_open() const;
@@ -41,7 +41,7 @@ class ConfigCenter {
   bool start_with_windows() const;
   bool pointer_tracking() const;
 
-  void set_user_paused(bool paused);
+  void set_wallpaper_enabled(bool enabled);
   void set_wallpaper_id(std::string id);
 
  private:
