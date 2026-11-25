@@ -12,7 +12,25 @@ namespace {
 constexpr const char* kBuiltinManifest   = "wallpapers/manifest.json";
 constexpr const char* kUserRefPrefix     = "user:";
 constexpr const char* kIndexFile         = "index.html";
-constexpr const char* kFallbackWallpaper = "matrix";  // 一个壁纸都没有时的兜底
+// 一个壁纸都没有时的兜底
+constexpr const char* kFallbackWallpaper = "matrix";
+
+// 视频文件判定：只认 WebView 能直接解码的容器
+bool is_video_path(const std::string& path) {
+    const std::size_t dot = path.find_last_of('.');
+    if (dot == std::string::npos) {
+        return false;
+    }
+
+    std::string ext = path.substr(dot + 1);
+    for (char& c : ext) {
+        if (c >= 'A' && c <= 'Z') {
+            c = static_cast<char>(c - 'A' + 'a');
+        }
+    }
+
+    return ext == "mp4" || ext == "webm" || ext == "m4v" || ext == "mov" || ext == "mkv";
+}
 
 // id 只保留 ASCII：它同时是文件夹名和 URL 路径，中文/空格走显示名就行
 std::string sanitize_id(std::string_view raw) {
@@ -546,10 +564,94 @@ void App::reset_config() {
 
 // ---------------------------------------------------------------- 壁纸导入
 
+// 添加视频壁纸：每个视频都变成一条独立的壁纸目录。
+// 目录里放 `web/shared/video-template` 的副本（播放框架）+ 视频文件本身，
+// 之后移除壁纸就是删目录，和导入的网页壁纸走完全相同的流程。
+void App::import_video_wallpaper(const std::string& path) {
+    const std::string base = env::file_stem(path);
+    std::string slug        = sanitize_id(base);
+    if (slug.empty()) {
+        slug = "video";
+    }
+
+    std::string id = slug;
+    for (int index = 2; index < 1000; ++index) {
+        if (!env::dir_exists(env::join_path(env::user_wallpapers_dir(), id))) {
+            break;
+        }
+        id = slug + "-" + std::to_string(index);
+    }
+
+    const std::string dir = env::join_path(env::user_wallpapers_dir(), id);
+    if (env::dir_exists(dir)) {
+        push_settings_toast("error", "同名壁纸已存在，请先移除或改名");
+        return;
+    }
+
+    // 1) 铺好播放框架
+    const std::string tmpl = env::join_path(env::web_root(), "shared/video-template");
+    std::string error;
+    if (!env::copy_tree(tmpl, dir, &error)) {
+        push_settings_toast("error", "复制播放框架失败：" + error);
+        env::remove_tree(dir, nullptr);
+        return;
+    }
+
+    // 2) 视频文件本身也放进目录，随壁纸一起移除
+    const std::string video_name = env::base_name(path);
+    if (!env::copy_file(path, env::join_path(dir, video_name), &error)) {
+        push_settings_toast("error", "复制视频失败：" + error);
+        env::remove_tree(dir, nullptr);
+        return;
+    }
+
+    // 3) 把模板里的占位符换成真实文件名
+    const std::string index_path = env::join_path(dir, kIndexFile);
+    std::string html;
+    if (!env::read_file(index_path, &html, &error)) {
+        push_settings_toast("error", "写入播放页失败：" + error);
+        env::remove_tree(dir, nullptr);
+        return;
+    }
+
+    const std::string placeholder = "__VIDEO_FILE__";
+    for (std::size_t pos = html.find(placeholder); pos != std::string::npos;
+         pos                = html.find(placeholder, pos)) {
+        html.replace(pos, placeholder.size(), video_name);
+    }
+
+    if (!env::write_file(index_path, html, env::FileMode::Write, &error)) {
+        push_settings_toast("error", "写入播放页失败：" + error);
+        env::remove_tree(dir, nullptr);
+        return;
+    }
+
+    // 4) 元数据：面板里显示视频原名
+    Json meta        = Json::object();
+    meta["name"]     = base.empty() ? id : base;
+    meta["description"] = "视频壁纸";
+    env::write_file(
+        env::join_path(dir, "wallpaper.json"), meta.dump(2), env::FileMode::Write, nullptr);
+
+    load_wallpaper_manifest();
+    switch_wallpaper(kUserRefPrefix + id);
+    push_settings_init();
+    push_settings_toast("success", "视频壁纸已添加");
+    log_info("添加视频壁纸: " + video_name);
+}
+
 void App::import_wallpaper(bool folder) {
     const std::string picked = folder ? host_.pick_folder() : host_.pick_html_file();
     if (picked.empty()) {
         return;  // 用户取消
+    }
+
+    // 选中的是视频：走视频壁纸这条路。
+    // 文件复制到 <data>/wallpapers/_videos/，正好能被 fleeting.local 这个虚拟主机提供，
+    // 不需要为视频单独加一套路径映射。
+    if (!folder && is_video_path(picked)) {
+        import_video_wallpaper(picked);
+        return;
     }
 
     const std::string base = folder ? env::base_name(picked) : env::file_stem(picked);

@@ -1,4 +1,4 @@
-#include "core/config.h"
+﻿#include "core/config.h"
 
 #include <algorithm>
 
@@ -166,7 +166,6 @@ void ConfigCenter::set_wallpaper_enabled(bool enabled) {
         log_warn("保存壁纸启用状态失败: " + error);
     }
 }
-
 void ConfigCenter::set_wallpaper_id(std::string id) {
     data_["wallpaper"]["id"] = std::move(id);
     std::string error;

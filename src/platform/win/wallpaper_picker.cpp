@@ -1,4 +1,4 @@
-#include "platform/win/wallpaper_picker.h"
+﻿#include "platform/win/wallpaper_picker.h"
 
 #include <commdlg.h>
 #include <objbase.h>
@@ -38,10 +38,10 @@ std::wstring pick_html_file_fallback(HWND owner) {
     OPENFILENAMEW ofn{};
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner   = owner;
-    ofn.lpstrFilter = L"网页文件 (*.html;*.htm)\0*.html;*.htm\0所有文件 (*.*)\0*.*\0";
+    ofn.lpstrFilter = L"壁纸文件 (*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv)\0*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv\0所有文件 (*.*)\0*.*\0";
     ofn.lpstrFile   = buffer;
     ofn.nMaxFile    = static_cast<DWORD>(std::size(buffer));
-    ofn.lpstrTitle  = L"选择壁纸 HTML 文件";
+    ofn.lpstrTitle  = L"选择壁纸文件（网页或视频）";
     ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_EXPLORER | OFN_NOCHANGEDIR;
     ofn.lpstrDefExt = L"html";
     if (!GetOpenFileNameW(&ofn)) {
@@ -80,7 +80,8 @@ std::string pick_html_file(HWND owner) {
     }
 
     static const COMDLG_FILTERSPEC kFilters[] = {
-        {L"网页文件 (*.html;*.htm)", L"*.html;*.htm"},
+        {L"网页或视频 (*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv)",
+         L"*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv"},
         {L"所有文件 (*.*)", L"*.*"},
     };
 

@@ -115,6 +115,7 @@ public:
 
 private:
     void load_wallpaper_manifest();
+    void import_video_wallpaper(const std::string& path);
     std::string default_wallpaper_ref() const;
     void recompute_state();
     void apply_suspension();

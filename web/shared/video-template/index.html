@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>视频壁纸</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+
+      /* 无边框铺满：按 cover 裁切，不出现黑边 */
+      .video-layer {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+        border: 0;
+      }
+
+      #hint {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        padding: 12px 18px;
+        border-radius: 6px;
+        background: rgba(10, 12, 20, 0.7);
+        color: #98a0b4;
+        font: 13px/1.6 system-ui, sans-serif;
+      }
+    </style>
+    <script src="../shared/bridge.js"></script>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="hint" hidden></div>
+    <script type="module">
+      import { createPlayer } from './player.js';
+
+      // 导入时会把这里替换成真实的视频文件名
+      const VIDEO_FILE = '__VIDEO_FILE__';
+
+      const stage = document.getElementById('stage');
+      const hint = document.getElementById('hint');
+
+      let player = null;
+      let paused = false;
+      let rate = 1;
+
+      function showHint(text) {
+        hint.textContent = text;
+        hint.hidden = false;
+      }
+
+      if (!VIDEO_FILE || VIDEO_FILE.indexOf('__VIDEO') === 0) {
+        showHint('这个壁纸目录里没有视频文件');
+      } else {
+        player = createPlayer({
+          host: stage,
+          src: './' + encodeURIComponent(VIDEO_FILE),
+          onError: () => showHint('无法播放：' + VIDEO_FILE),
+        });
+
+        player.setRate(rate);
+        if (!paused) {
+          player.play();
+        }
+      }
+
+      function applyConfig(config) {
+        const wallpaper = config && config.wallpaper;
+        if (!wallpaper || !player) {
+          return;
+        }
+
+        const speed = wallpaper.params && wallpaper.params.speed;
+        if (Number.isFinite(speed)) {
+          rate = Math.max(0.2, Math.min(2.5, speed));
+          player.setRate(rate);
+        }
+      }
+
+      if (window.bridge) {
+        window.bridge.onMessage((message) => {
+          if (!message || typeof message !== 'object') {
+            return;
+          }
+
+          if (message.type === 'init' || message.type === 'config') {
+            applyConfig(message.config);
+            return;
+          }
+
+          if (message.type === 'state' && player) {
+            paused = message.paused === true;
+            if (paused) {
+              player.pause();
+            } else {
+              player.play();
+            }
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
