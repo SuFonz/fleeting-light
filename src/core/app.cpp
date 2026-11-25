@@ -183,12 +183,19 @@ void App::load_wallpaper_manifest() {
                 entry.name        = item.at("name").as_string(entry.id);
                 entry.description = item.at("description").as_string();
                 entry.user        = false;
+
+                // 预览图是相对 web 根目录的路径；缺省就留空，面板会显示占位图标
+                const std::string preview = item.at("preview").as_string();
+                if (!preview.empty()) {
+                    entry.preview = "wallpapers/" + entry.id + "/" + preview;
+                }
+
                 wallpapers_.push_back(std::move(entry));
             }
         }
     }
     if (wallpapers_.empty()) {
-        wallpapers_.push_back(WallpaperEntry{kFallbackWallpaper, "数字雨", "内置", false});
+        wallpapers_.push_back(WallpaperEntry{kFallbackWallpaper, "数字雨", "内置", "", false});
     }
 
     // 2) 用户导入的壁纸：扫描 <data>/wallpapers 下的子目录
@@ -222,6 +229,16 @@ void App::load_wallpaper_manifest() {
                 const std::string meta_description = meta.at("description").as_string();
                 if (!meta_description.empty()) {
                     entry.description = meta_description;
+                }
+
+                // 导入的壁纸可以自带 preview.jpg / preview.png（相对自身目录）
+                const std::string meta_preview = meta.at("preview").as_string();
+                if (!meta_preview.empty()) {
+                    entry.preview = entry.id + "/" + meta_preview;
+                } else if (env::file_exists(env::join_path(dir, "preview.jpg"))) {
+                    entry.preview = entry.id + "/preview.jpg";
+                } else if (env::file_exists(env::join_path(dir, "preview.png"))) {
+                    entry.preview = entry.id + "/preview.png";
                 }
             }
         }
@@ -381,6 +398,7 @@ void App::push_settings_init() {
         item["id"]          = entry.ref();
         item["name"]        = entry.name;
         item["description"] = entry.description;
+        item["preview"]     = entry.preview;
         item["user"]        = entry.user;
         item["active"]      = (entry.ref() == config_.wallpaper_id());
         list.push(std::move(item));

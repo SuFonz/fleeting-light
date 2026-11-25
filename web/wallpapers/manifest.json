@@ -1,17 +1,20 @@
-[
+﻿[
   {
     "id": "riverside",
     "name": "河畔",
-    "description": "星空下的河畔步道，猫耳少女；点她的头会冒爱心"
+    "description": "星空下的河畔步道，猫耳少女；点她的头会冒爱心",
+    "preview": "preview.jpg"
   },
   {
     "id": "skyline",
     "name": "天台",
-    "description": "天台俯瞰城市灯海，猫耳少女；点她的头会冒爱心"
+    "description": "天台俯瞰城市灯海，猫耳少女；点她的头会冒爱心",
+    "preview": "preview.jpg"
   },
   {
     "id": "matrix",
     "name": "数字雨",
-    "description": "经典绿色字符流"
+    "description": "经典绿色字符流",
+    "preview": "preview.jpg"
   }
 ]

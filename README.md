@@ -316,7 +316,24 @@ What happens on import:
 </script>
 ```
 
-3. Register `id` / `name` / `description` in `web/wallpapers/manifest.json`
+3. Register it in `web/wallpapers/manifest.json`:
+
+```json
+{
+  "id": "my-wallpaper",
+  "name": "My wallpaper",
+  "description": "shown under the name in the settings panel",
+  "preview": "preview.jpg"
+}
+```
+
+`preview` is optional and relative to the wallpaper folder. Use a small image (256×144 is
+enough, the panel renders it at 64×34) — a full-size screenshot wastes several hundred KB.
+When `preview` is missing or the image fails to load, the panel shows a generic picture icon.
+
+The same applies to imported wallpapers: drop a `preview.jpg` or `preview.png` next to
+`index.html`, or point at one with `"preview": "..."` in its `wallpaper.json`.
+
 4. Select it in the settings panel — no restart needed
 
 `bootWallpaper` already handles DPR, resize, the frame cap, pause/resume and pointer delivery;

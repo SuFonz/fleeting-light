@@ -1,12 +1,6 @@
 // 设置面板：只做三件事——渲染状态、把用户操作发出去、把主进程回来的状态画上去。
 const bridge = window.bridge;
 
-const SWATCHES = {
-  riverside: 'linear-gradient(180deg, #0d1b3a 0%, #24457c 42%, #f5c98a 62%, #1a2742 100%)',
-  skyline: 'linear-gradient(180deg, #08122b 0%, #1d3a6b 38%, #ffd9a0 68%, #0c1830 100%)',
-  matrix: 'linear-gradient(120deg, #040807 0%, #0d3a1f 55%, #3ef08a 100%)',
-};
-
 const PAUSE_REASON_TEXT = {
   disabled: '已禁用，桌面背景已恢复',
   fullscreen: '全屏遮挡，暂停中',
@@ -67,18 +61,65 @@ function mergeDeep(target, patch) {
 
 // ------------------------------------------------------------------ 渲染
 
+// 没有预览图（或图加载失败）时的占位图标：一个简单的风景图符号
+function placeholderIcon() {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'wp-placeholder');
+  svg.setAttribute('aria-hidden', 'true');
+
+  const frame = document.createElementNS(NS, 'rect');
+  frame.setAttribute('x', '3');
+  frame.setAttribute('y', '5');
+  frame.setAttribute('width', '18');
+  frame.setAttribute('height', '14');
+  frame.setAttribute('rx', '2');
+
+  const sun = document.createElementNS(NS, 'circle');
+  sun.setAttribute('cx', '8.5');
+  sun.setAttribute('cy', '9.5');
+  sun.setAttribute('r', '1.6');
+
+  const hill = document.createElementNS(NS, 'path');
+  hill.setAttribute('d', 'M4 17l4.5-5 3 3.2L15 11l5 6z');
+
+  svg.append(frame, sun, hill);
+  return svg;
+}
+
+// 壁纸预览图：内置的走 fleeting.light，导入的走 fleeting.local。
+// 没有预览图时返回空串，由调用方显示占位图标。
+function previewUrl(item) {
+  if (!item.preview) {
+    return '';
+  }
+  const base = item.user ? 'https://fleeting.local/' : 'https://fleeting.light/';
+  return base + item.preview;
+}
+
 function createWallpaperRow(item, activeId) {
   const row = document.createElement('button');
   row.type = 'button';
   row.className = 'wp-row' + (item.id === activeId ? ' active' : '');
   row.dataset.id = item.id;
 
-  const swatch = document.createElement('span');
-  swatch.className = 'wp-swatch';
-  swatch.style.background =
-    SWATCHES[item.id] ||
-    SWATCHES[String(item.id).replace(/^user:/, '')] ||
-    'linear-gradient(120deg, #10131c, #2a3145)';
+  const thumb = document.createElement('span');
+  thumb.className = 'wp-swatch';
+  const url = previewUrl(item);
+  if (url) {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    img.loading = 'lazy';
+    // 图挂了就退回占位图标，别留一块破图
+    img.addEventListener('error', () => {
+      thumb.replaceChildren(placeholderIcon());
+    });
+    thumb.append(img);
+  } else {
+    thumb.append(placeholderIcon());
+  }
 
   const meta = document.createElement('span');
   meta.className = 'wp-meta';
@@ -90,7 +131,7 @@ function createWallpaperRow(item, activeId) {
   desc.textContent = item.description || '';
   meta.append(name, desc);
 
-  row.append(swatch, meta);
+  row.append(thumb, meta);
 
   if (item.user) {
     const remove = document.createElement('span');

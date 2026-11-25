@@ -50,6 +50,9 @@ struct WallpaperEntry {
     std::string id;  // 不含 "user:" 前缀
     std::string name;
     std::string description;
+    // 预览图相对路径（相对 web 根目录，例如 "wallpapers/riverside/preview.jpg"）。
+    // 为空表示没有预览图，设置面板会退回到图标占位。
+    std::string preview;
     bool user = false;
 
     std::string ref() const {
