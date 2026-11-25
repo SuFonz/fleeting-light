@@ -1,0 +1,582 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>星空山坡猫娘 · 互动动态壁纸</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #040714;
+      cursor: default;
+    }
+
+    #wallpaper-stage {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 35%, #0c1428 0%, #040714 100%);
+    }
+
+    canvas.layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+    }
+
+    #sky-canvas {
+      mix-blend-mode: screen;
+    }
+
+    #particle-canvas {
+      mix-blend-mode: screen;
+    }
+
+    #vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(2, 5, 16, 0.42) 100%);
+    }
+  </style>
+</head>
+<body>
+  <div id="wallpaper-stage">
+    <!-- Base illustration with smooth parallax & gentle breathing -->
+    <canvas id="bg-canvas" class="layer"></canvas>
+
+    <!-- Flowing light ribbons, twinkling stars, meteors, click ripples -->
+    <canvas id="sky-canvas" class="layer"></canvas>
+
+    <!-- Interactive fireflies, stardust, petting hearts, cursor trail -->
+    <canvas id="particle-canvas" class="layer"></canvas>
+
+    <div id="vignette"></div>
+  </div>
+
+  <script src="../../shared/bridge.js"></script>
+  <script>
+    (function () {
+      'use strict';
+
+      const BG_SRC = './bg.jpg';
+
+      const state = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        dpr: Math.min(window.devicePixelRatio || 1, 1.5),
+        pointerX: -9999,
+        pointerY: -9999,
+        targetParallaxX: 0,
+        targetParallaxY: 0,
+        currentParallaxX: 0,
+        currentParallaxY: 0,
+        imgReady: false,
+        layout: { drawX: 0, drawY: 0, drawW: 1, drawH: 1 }
+      };
+
+      const bgCanvas = document.getElementById('bg-canvas');
+
+      // 调试出口：devtools 里能直接看到光标位置和视差
+      window.__flState = state;
+      const skyCanvas = document.getElementById('sky-canvas');
+      const particleCanvas = document.getElementById('particle-canvas');
+
+      const bgCtx = bgCanvas.getContext('2d');
+      const skyCtx = skyCanvas.getContext('2d');
+      const pCtx = particleCanvas.getContext('2d');
+
+      const bgImg = new Image();
+      bgImg.onload = function () {
+        state.imgReady = true;
+      };
+      bgImg.src = BG_SRC;
+
+      function resizeCanvases() {
+        state.width = window.innerWidth;
+        state.height = window.innerHeight;
+        state.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+
+        [bgCanvas, skyCanvas, particleCanvas].forEach((canvas) => {
+          canvas.width = Math.floor(state.width * state.dpr);
+          canvas.height = Math.floor(state.height * state.dpr);
+        });
+
+        bgCtx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+        skyCtx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+        pCtx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+
+        initStars();
+      }
+
+      // --- Stars ---
+      let stars = [];
+      function initStars() {
+        const count = Math.min(200, Math.max(85, Math.floor((state.width * state.height) / 9200)));
+        stars = [];
+        for (let i = 0; i < count; i++) {
+          stars.push({
+            x: Math.random() * state.width,
+            y: Math.random() * state.height * 0.56,
+            r: Math.random() * 1.6 + 0.4,
+            phase: Math.random() * Math.PI * 2,
+            speed: Math.random() * 1.5 + 0.6,
+            isCross: Math.random() > 0.85
+          });
+        }
+      }
+
+      // --- Shooting Stars / Meteors ---
+      const meteors = [];
+      function spawnMeteor(startX, startY) {
+        const w = state.width;
+        const h = state.height;
+        const x = typeof startX === 'number' ? startX : w * (0.16 + Math.random() * 0.68);
+        const y = typeof startY === 'number' ? startY : h * (0.04 + Math.random() * 0.22);
+        const angle = Math.PI * 0.74 + (Math.random() - 0.5) * 0.2;
+        const speed = 10 + Math.random() * 7;
+        meteors.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          len: 95 + Math.random() * 90,
+          life: 1.0,
+          decay: 0.015 + Math.random() * 0.01
+        });
+      }
+
+      // --- Interactive Sky Ripples ---
+      const ripples = [];
+      function spawnRipple(x, y, color) {
+        ripples.push({
+          x,
+          y,
+          r: 4,
+          maxR: 72 + Math.random() * 32,
+          life: 1.0,
+          color: color || '#7dd3fc'
+        });
+      }
+
+      // --- Floating Fireflies & Stardust (Mouse-Interactive) ---
+      const PARTICLE_COLORS = ['#7dd3fc', '#bae6fd', '#c4b5fd', '#fde68a', '#f9a8d4'];
+      const particles = [];
+      const MAX_PARTICLES = 82;
+
+      function createParticle(randomY) {
+        return {
+          x: Math.random() * state.width,
+          y: randomY ? Math.random() * state.height : state.height + 20,
+          vx: (Math.random() - 0.5) * 0.3,
+          vy: -(0.22 + Math.random() * 0.55),
+          pushVx: 0,
+          pushVy: 0,
+          size: Math.random() * 3.0 + 1.2,
+          alpha: Math.random() * 0.6 + 0.25,
+          phase: Math.random() * Math.PI * 2,
+          color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)]
+        };
+      }
+
+      function initParticles() {
+        particles.length = 0;
+        for (let i = 0; i < MAX_PARTICLES; i++) {
+          particles.push(createParticle(true));
+        }
+      }
+
+      // --- Cursor Stardust Trail ---
+      const trailParticles = [];
+      function addTrailParticle(x, y) {
+        for (let i = 0; i < 2; i++) {
+          trailParticles.push({
+            x: x + (Math.random() - 0.5) * 10,
+            y: y + (Math.random() - 0.5) * 10,
+            vx: (Math.random() - 0.5) * 0.9,
+            vy: -0.35 - Math.random() * 0.75,
+            size: Math.random() * 2.5 + 1.1,
+            life: 1.0,
+            color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)]
+          });
+        }
+        if (trailParticles.length > 90) {
+          trailParticles.splice(0, trailParticles.length - 90);
+        }
+      }
+
+      // --- Petting Hearts & Sparkles ---
+      const hearts = [];
+      function spawnHearts(x, y) {
+        const colors = ['#f9a8d4', '#f472b6', '#fbcfe8', '#fde68a'];
+        for (let i = 0; i < 7; i++) {
+          hearts.push({
+            x: x + (Math.random() - 0.5) * 44,
+            y: y + (Math.random() - 0.5) * 20,
+            vx: (Math.random() - 0.5) * 1.1,
+            vy: -1.1 - Math.random() * 1.2,
+            size: 6 + Math.random() * 5,
+            life: 1.0,
+            phase: Math.random() * Math.PI * 2,
+            color: colors[Math.floor(Math.random() * colors.length)]
+          });
+        }
+      }
+
+      function drawHeart(ctx, x, y, size) {
+        ctx.beginPath();
+        const topCurveHeight = size * 0.3;
+        ctx.moveTo(x, y + topCurveHeight);
+        ctx.bezierCurveTo(x, y, x - size / 2, y, x - size / 2, y + topCurveHeight);
+        ctx.bezierCurveTo(x - size / 2, y + (size + topCurveHeight) / 2, x, y + (size + topCurveHeight) / 1.4, x, y + size);
+        ctx.bezierCurveTo(x, y + (size + topCurveHeight) / 1.4, x + size / 2, y + (size + topCurveHeight) / 2, x + size / 2, y + topCurveHeight);
+        ctx.bezierCurveTo(x + size / 2, y, x, y, x, y + topCurveHeight);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // --- Draw Base Illustration ---
+      function drawScene(timeSec) {
+        if (!state.imgReady) return;
+
+        const w = state.width;
+        const h = state.height;
+        const iw = bgImg.naturalWidth;
+        const ih = bgImg.naturalHeight;
+
+        const breatheScale = 1.036 + Math.sin(timeSec * 0.42) * 0.008;
+        const baseScale = Math.max(w / iw, h / ih) * breatheScale;
+        const drawW = iw * baseScale;
+        const drawH = ih * baseScale;
+
+        const drawX = (w - drawW) * 0.5 + state.currentParallaxX;
+        const drawY = (h - drawH) * 0.48 + state.currentParallaxY + Math.sin(timeSec * 0.42) * 2.0;
+
+        state.layout = { drawX, drawY, drawW, drawH };
+
+        bgCtx.clearRect(0, 0, w, h);
+        bgCtx.drawImage(bgImg, drawX, drawY, drawW, drawH);
+      }
+
+      // --- Flowing Light Ribbons ---
+      const RIBBONS = [
+        ['rgba(56, 189, 248, 0.22)', 'rgba(99, 102, 241, 0.16)', 'rgba(167, 139, 250, 0.20)'],
+        ['rgba(45, 212, 191, 0.14)', 'rgba(56, 189, 248, 0.16)', 'rgba(192, 132, 252, 0.16)']
+      ];
+
+      function drawFlowingLight(timeSec) {
+        const w = state.width;
+        const h = state.height;
+
+        RIBBONS.forEach((palette, idx) => {
+          skyCtx.save();
+          const baseY = h * (0.16 + idx * 0.10);
+          const amp = h * (0.045 + idx * 0.018);
+          const speed = 0.28 + idx * 0.11;
+          const grad = skyCtx.createLinearGradient(0, baseY - amp * 2, w, baseY + amp * 2);
+          grad.addColorStop(0, 'rgba(0,0,0,0)');
+          grad.addColorStop(0.22, palette[0]);
+          grad.addColorStop(0.55, palette[1]);
+          grad.addColorStop(0.84, palette[2]);
+          grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+          skyCtx.globalAlpha = 0.62;
+          skyCtx.fillStyle = grad;
+          skyCtx.beginPath();
+
+          const steps = 26;
+          skyCtx.moveTo(0, baseY + Math.sin(timeSec * speed) * amp);
+          for (let i = 1; i <= steps; i++) {
+            const x = (i / steps) * w;
+            const wave =
+              Math.sin(i * 0.35 + timeSec * speed + idx * 1.7) * amp +
+              Math.cos(i * 0.18 - timeSec * speed * 0.7) * (amp * 0.45);
+            skyCtx.lineTo(x, baseY + wave);
+          }
+          for (let i = steps; i >= 0; i--) {
+            const x = (i / steps) * w;
+            const thickness = 48 + Math.sin(i * 0.4 + timeSec * 0.5) * 22;
+            const wave =
+              Math.sin(i * 0.35 + timeSec * speed + idx * 1.7) * amp +
+              Math.cos(i * 0.18 - timeSec * speed * 0.7) * (amp * 0.45);
+            skyCtx.lineTo(x, baseY + wave - thickness);
+          }
+          skyCtx.closePath();
+          skyCtx.filter = 'blur(26px)';
+          skyCtx.fill();
+          skyCtx.restore();
+        });
+      }
+
+      // --- Main Loop ---
+      let rafId = null;
+      let lastMeteorAuto = 0;
+
+      function render(nowMs) {
+        const timeSec = nowMs * 0.001;
+        const w = state.width;
+        const h = state.height;
+
+        state.currentParallaxX += (state.targetParallaxX - state.currentParallaxX) * 0.06;
+        state.currentParallaxY += (state.targetParallaxY - state.currentParallaxY) * 0.06;
+
+        // 1. Background Scene
+        drawScene(timeSec);
+
+        // 2. Sky Canvas
+        skyCtx.clearRect(0, 0, w, h);
+        drawFlowingLight(timeSec);
+
+        stars.forEach((s) => {
+          const pulse = 0.42 + 0.58 * Math.sin(timeSec * s.speed + s.phase);
+          const alpha = pulse * 0.85;
+          skyCtx.fillStyle = `rgba(224, 242, 254, ${alpha})`;
+          skyCtx.beginPath();
+          skyCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          skyCtx.fill();
+
+          if (s.isCross && pulse > 0.72) {
+            const len = s.r * 4.2 * pulse;
+            skyCtx.strokeStyle = `rgba(186, 230, 253, ${alpha * 0.75})`;
+            skyCtx.lineWidth = 0.8;
+            skyCtx.beginPath();
+            skyCtx.moveTo(s.x - len, s.y);
+            skyCtx.lineTo(s.x + len, s.y);
+            skyCtx.moveTo(s.x, s.y - len);
+            skyCtx.lineTo(s.x, s.y + len);
+            skyCtx.stroke();
+          }
+        });
+
+        if (nowMs - lastMeteorAuto > 4600) {
+          if (Math.random() > 0.3) spawnMeteor();
+          lastMeteorAuto = nowMs;
+        }
+
+        for (let i = meteors.length - 1; i >= 0; i--) {
+          const m = meteors[i];
+          m.x += m.vx;
+          m.y += m.vy;
+          m.life -= m.decay;
+          if (m.life <= 0) {
+            meteors.splice(i, 1);
+            continue;
+          }
+          const mag = Math.hypot(m.vx, m.vy);
+          const tailX = m.x - (m.vx / mag) * m.len;
+          const tailY = m.y - (m.vy / mag) * m.len;
+          const grad = skyCtx.createLinearGradient(m.x, m.y, tailX, tailY);
+          grad.addColorStop(0, `rgba(255, 255, 255, ${m.life})`);
+          grad.addColorStop(0.3, `rgba(125, 211, 252, ${m.life * 0.7})`);
+          grad.addColorStop(1, 'rgba(125, 211, 252, 0)');
+
+          skyCtx.strokeStyle = grad;
+          skyCtx.lineWidth = 2.2;
+          skyCtx.lineCap = 'round';
+          skyCtx.beginPath();
+          skyCtx.moveTo(m.x, m.y);
+          skyCtx.lineTo(tailX, tailY);
+          skyCtx.stroke();
+
+          skyCtx.fillStyle = `rgba(255, 255, 255, ${m.life})`;
+          skyCtx.beginPath();
+          skyCtx.arc(m.x, m.y, 2.2, 0, Math.PI * 2);
+          skyCtx.fill();
+        }
+
+        // Click ripples
+        for (let i = ripples.length - 1; i >= 0; i--) {
+          const rp = ripples[i];
+          rp.r += (rp.maxR - rp.r) * 0.08;
+          rp.life -= 0.025;
+          if (rp.life <= 0) {
+            ripples.splice(i, 1);
+            continue;
+          }
+          skyCtx.save();
+          skyCtx.globalAlpha = rp.life * 0.7;
+          skyCtx.strokeStyle = rp.color;
+          skyCtx.lineWidth = 1.5;
+          skyCtx.beginPath();
+          skyCtx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+          skyCtx.stroke();
+          skyCtx.restore();
+        }
+
+        // 3. Particle Canvas
+        pCtx.clearRect(0, 0, w, h);
+
+        for (let i = 0; i < particles.length; i++) {
+          const p = particles[i];
+          const sway = Math.sin(timeSec * 0.9 + p.phase) * 0.42;
+
+          // Mouse repulsion / swirl interaction
+          const dx = p.x - state.pointerX;
+          const dy = p.y - state.pointerY;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 115 && dist > 0.1) {
+            const force = (1 - dist / 115) * 0.95;
+            p.pushVx += (dx / dist) * force;
+            p.pushVy += (dy / dist) * force;
+          }
+          p.pushVx *= 0.92;
+          p.pushVy *= 0.92;
+
+          p.x += p.vx + sway + p.pushVx;
+          p.y += p.vy + p.pushVy;
+
+          if (p.y < -20) {
+            p.x = Math.random() * w;
+            p.y = h + 15;
+          }
+
+          const pulse = 0.55 + 0.45 * Math.sin(timeSec * 1.8 + p.phase);
+          pCtx.save();
+          pCtx.globalAlpha = p.alpha * pulse;
+          pCtx.fillStyle = p.color;
+          pCtx.shadowBlur = 12;
+          pCtx.shadowColor = p.color;
+          pCtx.beginPath();
+          pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          pCtx.fill();
+          pCtx.restore();
+        }
+
+        // Cursor trail
+        for (let i = trailParticles.length - 1; i >= 0; i--) {
+          const tp = trailParticles[i];
+          tp.x += tp.vx;
+          tp.y += tp.vy;
+          tp.life -= 0.025;
+          if (tp.life <= 0) {
+            trailParticles.splice(i, 1);
+            continue;
+          }
+          pCtx.save();
+          pCtx.globalAlpha = tp.life * 0.85;
+          pCtx.fillStyle = tp.color;
+          pCtx.shadowBlur = 10;
+          pCtx.shadowColor = tp.color;
+          pCtx.beginPath();
+          pCtx.arc(tp.x, tp.y, tp.size * tp.life, 0, Math.PI * 2);
+          pCtx.fill();
+          pCtx.restore();
+        }
+
+        // Petting hearts
+        for (let i = hearts.length - 1; i >= 0; i--) {
+          const ht = hearts[i];
+          ht.x += ht.vx + Math.sin(timeSec * 4 + ht.phase) * 0.35;
+          ht.y += ht.vy;
+          ht.life -= 0.016;
+          if (ht.life <= 0) {
+            hearts.splice(i, 1);
+            continue;
+          }
+          pCtx.save();
+          pCtx.globalAlpha = ht.life * 0.92;
+          pCtx.fillStyle = ht.color;
+          pCtx.shadowBlur = 10;
+          pCtx.shadowColor = ht.color;
+          drawHeart(pCtx, ht.x, ht.y, ht.size);
+          pCtx.restore();
+        }
+
+        rafId = requestAnimationFrame(render);
+      }
+
+      // --- 互动：壁纸挂在桌面底层收不到真实鼠标事件，改由 bridge 的 pointer 消息驱动 ---
+      window.addEventListener('resize', resizeCanvases);
+
+      function applyPointer(px, py) {
+        state.pointerX = px;
+        state.pointerY = py;
+
+        const nx = px / Math.max(1, state.width) - 0.5;
+        const ny = py / Math.max(1, state.height) - 0.5;
+        state.targetParallaxX = -nx * 16;
+        state.targetParallaxY = -ny * 10;
+
+        addTrailParticle(px, py);
+      }
+
+      function applyClick(px, py) {
+        const { drawX, drawY, drawW, drawH } = state.layout;
+        const relX = (px - drawX) / Math.max(1, drawW);
+        const relY = (py - drawY) / Math.max(1, drawH);
+
+        // 点在猫娘的头部/耳朵范围（相对图片 0.46~0.56, 0.14~0.33）会冒爱心，其余地方招流星
+        if (relX >= 0.46 && relX <= 0.56 && relY >= 0.14 && relY <= 0.33) {
+          spawnHearts(px, py - 10);
+          spawnRipple(px, py, '#f9a8d4');
+        } else {
+          spawnMeteor(px, Math.min(py, state.height * 0.48));
+          spawnRipple(px, py, '#7dd3fc');
+        }
+      }
+
+      let pointerDown = false;
+
+      if (window.bridge) {
+        window.bridge.onMessage((message) => {
+          if (!message || typeof message !== 'object') {
+            return;
+          }
+
+          if (message.type === 'pointer') {
+            if (message.inside === false) {
+              state.pointerX = -9999;
+              state.pointerY = -9999;
+              pointerDown = false;
+              return;
+            }
+
+            const px = message.x * state.width;
+            const py = message.y * state.height;
+            applyPointer(px, py);
+
+            const down = message.down === true;
+            if (down && !pointerDown) {
+              applyClick(px, py);
+            }
+            pointerDown = down;
+            return;
+          }
+
+          // 壁纸被禁用或系统暂停时停掉动画帧，恢复时重新起步
+          if (message.type === 'state') {
+            if (message.paused) {
+              if (rafId) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+              }
+            } else if (!rafId) {
+              rafId = requestAnimationFrame(render);
+            }
+          }
+        });
+      }
+
+      window.addEventListener('load', () => {
+        resizeCanvases();
+        initParticles();
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(render);
+      });
+    })();
+  </script>
+</body>
+</html>

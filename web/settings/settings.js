@@ -2,6 +2,8 @@
 const bridge = window.bridge;
 
 const SWATCHES = {
+  riverside: 'linear-gradient(180deg, #0d1b3a 0%, #24457c 42%, #f5c98a 62%, #1a2742 100%)',
+  skyline: 'linear-gradient(180deg, #08122b 0%, #1d3a6b 38%, #ffd9a0 68%, #0c1830 100%)',
   matrix: 'linear-gradient(120deg, #040807 0%, #0d3a1f 55%, #3ef08a 100%)',
 };
 
