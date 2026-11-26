@@ -123,7 +123,8 @@ private:
     void broadcast_state();
     void push_wallpaper_init();
     void push_settings_init();
-    void push_settings_toast(const char* level, std::string message);
+    // key 是 web/shared/i18n.json 里的条目；detail 会拼在翻译结果后面
+    void push_settings_toast(const char* level, std::string key, std::string detail = {});
     void switch_wallpaper(std::string ref);
 
     void handle_wallpaper_message(std::string_view json);

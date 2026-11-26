@@ -1,6 +1,5 @@
 // 设置面板：只做三件事——渲染状态、把用户操作发出去、把主进程回来的状态画上去。
-import { setLanguage, language, t, applyI18n } from './i18n.js';
-import { translateToast } from './toast-text.js';
+import { loadI18n, setLanguage, t, applyI18n } from './i18n.js';
 
 const bridge = window.bridge;
 
@@ -546,16 +545,24 @@ function handleMessage(message) {
       break;
     }
 
-    case 'toast':
-      toast(translateToast(message.message || '', language()), message.level);
+    case 'toast': {
+      // core 只发 key，这里按当前语言取文案，再拼上 detail（文件名之类的）
+      const text = t(message.key || '');
+      toast(text + (message.detail || ''), message.level);
       break;
+    }
 
     default:
       break;
   }
 }
 
-function init() {
+async function init() {
+  try {
+    await loadI18n();
+  } catch (error) {
+    console.error('[i18n] 加载失败', error);
+  }
   bindEvents();
   renderStatus();
   if (bridge) {
@@ -567,7 +574,7 @@ function init() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init, { once: true });
+  document.addEventListener('DOMContentLoaded', () => void init(), { once: true });
 } else {
-  init();
+  void init();
 }

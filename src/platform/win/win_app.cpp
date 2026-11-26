@@ -1,4 +1,5 @@
-﻿#include "platform/win/win_app.h"
+﻿#include "platform/win/ui_text.h"
+#include "platform/win/win_app.h"
 
 #include <shellapi.h>
 #include <shlobj.h>
@@ -112,22 +113,22 @@ bool any_window_maximized() {
 std::wstring tooltip_for(const core::App& core) {
     std::wstring text = L"Fleeting Light";
     if (!core.paused()) {
-        return text + L" · 运行中";
+        return text + tr("tooltip.running");
     }
     const std::string& reason = core.pause_reason();
     if (reason == "disabled") {
-        return text + L" · 已禁用";
+        return text + tr("tooltip.disabled");
     }
     if (reason == "fullscreen") {
-        return text + L" · 全屏遮挡，暂停中";
+        return text + tr("tooltip.fullscreen");
     }
     if (reason == "lock") {
-        return text + L" · 锁屏，暂停中";
+        return text + tr("tooltip.lock");
     }
     if (reason == "suspend") {
-        return text + L" · 休眠，暂停中";
+        return text + tr("tooltip.suspend");
     }
-    return text + L" · 暂停中";
+    return text + tr("tooltip.paused");
 }
 
 }  // namespace
@@ -225,6 +226,10 @@ int WinApp::run(HINSTANCE instance, bool open_settings_on_start) {
     RegisterHotKey(dispatcher_, kHotkeyToggleSettings, MOD_CONTROL | MOD_ALT, VK_F9);
 
     core_.start();
+
+    // 原生界面（托盘 / 气泡 / 窗口标题）共用 web/shared/i18n.json 这份文案
+    load_ui_text(env::web_root());
+    set_ui_language(core_.config().get_path("app.language").as_string("auto"));
     start_wallpaper();
     if (open_settings_on_start) {
         open_settings();
@@ -465,21 +470,26 @@ void WinApp::update_tray() {
 }
 
 void WinApp::show_tray_menu(POINT screen_point) {
+    set_ui_language(core_.config().get_path("app.language").as_string("auto"));
     HMENU menu = CreatePopupMenu();
-    AppendMenuW(menu, MF_STRING, kMenuSettings, L"打开设置面板\tCtrl+Alt+F9");
+    AppendMenuW(menu, MF_STRING, kMenuSettings,
+                tr("tray.settings").c_str());
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(
-        menu, MF_STRING | (core_.enabled() ? MF_CHECKED : MF_UNCHECKED), kMenuPause, L"显示壁纸");
-    AppendMenuW(menu, MF_STRING, kMenuReload, L"重新加载壁纸");
-    AppendMenuW(menu, MF_STRING, kMenuDevTools, L"壁纸开发者工具");
+        menu,
+        MF_STRING | (core_.enabled() ? MF_CHECKED : MF_UNCHECKED),
+        kMenuPause,
+        tr("tray.showWallpaper").c_str());
+    AppendMenuW(menu, MF_STRING, kMenuReload, tr("tray.reload").c_str());
+    AppendMenuW(menu, MF_STRING, kMenuDevTools, tr("tray.devtools").c_str());
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(menu,
                 MF_STRING | (autostart_enabled() ? MF_CHECKED : MF_UNCHECKED),
                 kMenuAutostart,
-                L"开机自启");
-    AppendMenuW(menu, MF_STRING, kMenuDataDir, L"打开配置目录");
+                tr("tray.autostart").c_str());
+    AppendMenuW(menu, MF_STRING, kMenuDataDir, tr("tray.dataDir").c_str());
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(menu, MF_STRING, kMenuQuit, L"退出");
+    AppendMenuW(menu, MF_STRING, kMenuQuit, tr("tray.quit").c_str());
 
     SetForegroundWindow(dispatcher_);
     const UINT command = TrackPopupMenu(menu,
@@ -616,7 +626,7 @@ void WinApp::open_settings() {
 
     HWND hwnd = CreateWindowExW(WS_EX_APPWINDOW,
                                 kSettingsClass,
-                                L"Fleeting Light \u00B7 设置",
+                                tr("native.settingsTitle").c_str(),
                                 WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
                                 CW_USEDEFAULT,
                                 CW_USEDEFAULT,

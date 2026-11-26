@@ -429,14 +429,17 @@ void App::push_settings_init() {
     settings_->send(msg.dump());
 }
 
-void App::push_settings_toast(const char* level, std::string message) {
+void App::push_settings_toast(const char* level, std::string key, std::string detail) {
     if (!settings_) {
         return;
     }
-    Json msg       = Json::object();
-    msg["type"]    = "toast";
-    msg["level"]   = level;
-    msg["message"] = std::move(message);
+
+    // 只发 key，具体语言由设置面板按 web/shared/i18n.json 决定
+    Json msg      = Json::object();
+    msg["type"]   = "toast";
+    msg["level"]  = level;
+    msg["key"]    = std::move(key);
+    msg["detail"] = std::move(detail);
     settings_->send(msg.dump());
 }
 
@@ -491,7 +494,7 @@ void App::set_wallpaper_enabled(bool enabled) {
     in_disabled_ = disabled;
     config_.set_wallpaper_enabled(enabled);
     recompute_state();
-    push_settings_toast("info", enabled ? "壁纸已启用" : "壁纸已禁用，桌面背景已恢复");
+    push_settings_toast("info", enabled ? "toast.enabled" : "toast.disabled");
 }
 
 void App::reload_wallpaper() {
@@ -550,7 +553,7 @@ void App::switch_wallpaper(std::string ref) {
 void App::reset_config() {
     std::string error;
     if (!config_.reset_to_defaults(&error)) {
-        push_settings_toast("error", "重置失败: " + error);
+        push_settings_toast("error", "toast.resetFailed", error);
         return;
     }
     in_disabled_ = !config_.wallpaper_enabled();
@@ -561,7 +564,7 @@ void App::reset_config() {
     broadcast_config();
     recompute_state();
     push_settings_init();
-    push_settings_toast("success", "已恢复默认设置");
+    push_settings_toast("success", "toast.reset");
 }
 
 // ---------------------------------------------------------------- 壁纸导入
@@ -586,7 +589,7 @@ void App::import_video_wallpaper(const std::string& path) {
 
     const std::string dir = env::join_path(env::user_wallpapers_dir(), id);
     if (env::dir_exists(dir)) {
-        push_settings_toast("error", "同名壁纸已存在，请先移除或改名");
+        push_settings_toast("error", "toast.nameTaken");
         return;
     }
 
@@ -594,7 +597,7 @@ void App::import_video_wallpaper(const std::string& path) {
     const std::string tmpl = env::join_path(env::web_root(), "shared/video-template");
     std::string error;
     if (!env::copy_tree(tmpl, dir, &error)) {
-        push_settings_toast("error", "复制播放框架失败：" + error);
+        push_settings_toast("error", "toast.copyTemplateFailed", error);
         env::remove_tree(dir, nullptr);
         return;
     }
@@ -602,7 +605,7 @@ void App::import_video_wallpaper(const std::string& path) {
     // 2) 视频文件本身也放进目录，随壁纸一起移除
     const std::string video_name = env::base_name(path);
     if (!env::copy_file(path, env::join_path(dir, video_name), &error)) {
-        push_settings_toast("error", "复制视频失败：" + error);
+        push_settings_toast("error", "toast.copyVideoFailed", error);
         env::remove_tree(dir, nullptr);
         return;
     }
@@ -611,7 +614,7 @@ void App::import_video_wallpaper(const std::string& path) {
     const std::string index_path = env::join_path(dir, kIndexFile);
     std::string html;
     if (!env::read_file(index_path, &html, &error)) {
-        push_settings_toast("error", "写入播放页失败：" + error);
+        push_settings_toast("error", "toast.writePageFailed", error);
         env::remove_tree(dir, nullptr);
         return;
     }
@@ -623,7 +626,7 @@ void App::import_video_wallpaper(const std::string& path) {
     }
 
     if (!env::write_file(index_path, html, env::FileMode::Write, &error)) {
-        push_settings_toast("error", "写入播放页失败：" + error);
+        push_settings_toast("error", "toast.writePageFailed", error);
         env::remove_tree(dir, nullptr);
         return;
     }
@@ -638,7 +641,7 @@ void App::import_video_wallpaper(const std::string& path) {
     load_wallpaper_manifest();
     switch_wallpaper(kUserRefPrefix + id);
     push_settings_init();
-    push_settings_toast("success", "视频壁纸已添加");
+    push_settings_toast("success", "toast.videoAdded");
     log_info("添加视频壁纸: " + video_name);
 }
 
@@ -672,7 +675,7 @@ void App::import_wallpaper(bool folder) {
 
     const std::string dir = env::join_path(env::user_wallpapers_dir(), id);
     if (env::dir_exists(dir)) {
-        push_settings_toast("error", "同名壁纸已存在，请先移除或改名");
+        push_settings_toast("error", "toast.nameTaken");
         return;
     }
 
@@ -681,11 +684,11 @@ void App::import_wallpaper(bool folder) {
         const bool has_index     = env::file_exists(env::join_path(picked, kIndexFile));
         const bool has_index_htm = env::file_exists(env::join_path(picked, "index.htm"));
         if (!has_index && !has_index_htm) {
-            push_settings_toast("error", "这个文件夹里没有 index.html，请选网页构建产物的根目录");
+            push_settings_toast("error", "toast.noIndex");
             return;
         }
         if (!env::copy_tree(picked, dir, &error)) {
-            push_settings_toast("error", "复制文件夹失败：" + error);
+            push_settings_toast("error", "toast.copyFolderFailed", error);
             env::remove_tree(dir, nullptr);
             return;
         }
@@ -695,11 +698,11 @@ void App::import_wallpaper(bool folder) {
         }
     } else {
         if (!env::ensure_dir(dir)) {
-            push_settings_toast("error", "无法创建壁纸目录：" + env::user_wallpapers_dir());
+            push_settings_toast("error", "toast.mkdirFailed", env::user_wallpapers_dir());
             return;
         }
         if (!env::copy_file(picked, env::join_path(dir, kIndexFile), &error)) {
-            push_settings_toast("error", "复制文件失败：" + error);
+            push_settings_toast("error", "toast.copyFileFailed", error);
             env::remove_tree(dir, nullptr);
             return;
         }
@@ -716,24 +719,24 @@ void App::import_wallpaper(bool folder) {
     load_wallpaper_manifest();
     switch_wallpaper(std::string(kUserRefPrefix) + id);
     push_settings_init();
-    push_settings_toast("success", "已添加壁纸：" + display_name);
+    push_settings_toast("success", "toast.added", display_name);
 }
 
 void App::remove_wallpaper(std::string_view ref) {
     if (!is_user_ref(ref)) {
-        push_settings_toast("error", "内置壁纸不能移除");
+        push_settings_toast("error", "toast.builtinReadonly");
         return;
     }
     const std::string id = ref_to_id(ref);
     if (!valid_user_id(id)) {
-        push_settings_toast("error", "壁纸 id 非法");
+        push_settings_toast("error", "toast.badId");
         return;
     }
 
     const std::string dir = env::join_path(env::user_wallpapers_dir(), id);
     std::string error;
     if (!env::remove_tree(dir, &error)) {
-        push_settings_toast("error", "移除失败：" + error);
+        push_settings_toast("error", "toast.removeFailed", error);
         return;
     }
 
@@ -743,7 +746,7 @@ void App::remove_wallpaper(std::string_view ref) {
         switch_wallpaper(default_wallpaper_ref());
     }
     push_settings_init();
-    push_settings_toast("success", "已移除壁纸");
+    push_settings_toast("success", "toast.removed");
     log_info("移除壁纸: " + std::string(ref));
 }
 
@@ -809,7 +812,7 @@ void App::handle_settings_message(std::string_view json) {
     if (type == "update") {
         const Json& patch = msg.at("config");
         if (!patch.is_object()) {
-            push_settings_toast("error", "配置补丁格式错误");
+            push_settings_toast("error", "toast.badPatch");
             return;
         }
         const std::string previous_id = config_.wallpaper_id();
@@ -817,7 +820,7 @@ void App::handle_settings_message(std::string_view json) {
         std::string error;
         if (!config_.apply_patch(patch, &error)) {
             log_warn("保存配置失败: " + error);
-            push_settings_toast("error", "保存配置失败: " + error);
+            push_settings_toast("error", "toast.saveFailed", error);
             return;
         }
         if (config_.start_with_windows() != previous_autostart) {
@@ -833,7 +836,7 @@ void App::handle_settings_message(std::string_view json) {
         }
         broadcast_config();
         recompute_state();
-        push_settings_toast("success", "设置已保存");
+        push_settings_toast("success", "toast.saved");
         return;
     }
     if (type == "set_enabled") {
@@ -852,7 +855,7 @@ void App::handle_action(std::string_view name, const Json& payload) {
         host_.request_quit();
     } else if (name == "restart_wallpaper") {
         reload_wallpaper();
-        push_settings_toast("success", "壁纸已重启");
+        push_settings_toast("success", "toast.reloaded");
     } else if (name == "reset_config") {
         reset_config();
     } else if (name == "open_data_dir") {
@@ -872,7 +875,7 @@ void App::handle_action(std::string_view name, const Json& payload) {
         patch["app"]["startWithWindows"] = enabled;
         config_.apply_patch(patch, nullptr);
         broadcast_config();
-        push_settings_toast("success", enabled ? "已设置开机自启" : "已取消开机自启");
+        push_settings_toast("success", enabled ? "toast.autostartOn" : "toast.autostartOff");
     } else if (name == "refresh_manifest") {
         load_wallpaper_manifest();
         push_settings_init();

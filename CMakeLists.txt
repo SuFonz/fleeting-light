@@ -52,6 +52,7 @@ if(WIN32)
     src/platform/win/desktop_host.cpp
     src/platform/win/env_win.cpp
     src/platform/win/tray.cpp
+    src/platform/win/ui_text.cpp
     src/platform/win/wallpaper_picker.cpp
     src/platform/win/webview2_env.cpp
     src/platform/win/webview2_loader.cpp

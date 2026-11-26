@@ -1,4 +1,5 @@
-﻿#include "platform/win/wallpaper_picker.h"
+﻿#include "platform/win/ui_text.h"
+#include "platform/win/wallpaper_picker.h"
 
 #include <commdlg.h>
 #include <objbase.h>
@@ -33,15 +34,31 @@ std::wstring shell_item_path(IShellItem* item) {
     return path;
 }
 
+// "名称\0模式\0名称\0模式\0\0" —— 调用方持有返回值直到对话框结束
+std::wstring wallpaper_filter() {
+    std::wstring out = tr("native.filterWallpaper");
+    out += L'\0';
+    out += L"*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv";
+    out += L'\0';
+    out += tr("native.filterAll");
+    out += L'\0';
+    out += L"*.*";
+    out += L'\0';
+    out += L'\0';
+    return out;
+}
+
 std::wstring pick_html_file_fallback(HWND owner) {
     wchar_t buffer[MAX_PATH * 2] = {};
     OPENFILENAMEW ofn{};
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner   = owner;
-    ofn.lpstrFilter = L"壁纸文件 (*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv)\0*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv\0所有文件 (*.*)\0*.*\0";
+    // 过滤器是 "名称\0模式\0名称\0模式\0\0"，要在栈上拼好保证活到对话框结束
+    const std::wstring filter = wallpaper_filter();
     ofn.lpstrFile   = buffer;
     ofn.nMaxFile    = static_cast<DWORD>(std::size(buffer));
-    ofn.lpstrTitle  = L"选择壁纸文件（网页或视频）";
+    ofn.lpstrFilter = filter.c_str();
+    ofn.lpstrTitle  = tr("native.pickFileTitle").c_str();
     ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_EXPLORER | OFN_NOCHANGEDIR;
     ofn.lpstrDefExt = L"html";
     if (!GetOpenFileNameW(&ofn)) {
@@ -53,7 +70,7 @@ std::wstring pick_html_file_fallback(HWND owner) {
 std::wstring pick_folder_fallback(HWND owner) {
     BROWSEINFOW info{};
     info.hwndOwner      = owner;
-    info.lpszTitle      = L"选择壁纸文件夹（根目录需包含 index.html）";
+    info.lpszTitle      = tr("native.pickFolderTitle").c_str();
     info.ulFlags        = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
     PIDLIST_ABSOLUTE id = SHBrowseForFolderW(&info);
     if (!id) {
@@ -79,10 +96,11 @@ std::string pick_html_file(HWND owner) {
         return to_utf8(pick_html_file_fallback(owner));
     }
 
-    static const COMDLG_FILTERSPEC kFilters[] = {
-        {L"网页或视频 (*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv)",
-         L"*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv"},
-        {L"所有文件 (*.*)", L"*.*"},
+    const std::wstring filter_name = tr("native.filterWallpaper");
+    const std::wstring all_name = tr("native.filterAll");
+    const COMDLG_FILTERSPEC kFilters[] = {
+        {filter_name.c_str(), L"*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv"},
+        {all_name.c_str(), L"*.*"},
     };
 
     DWORD options = 0;
@@ -90,7 +108,7 @@ std::string pick_html_file(HWND owner) {
     dialog->SetOptions(options | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_FILEMUSTEXIST
                        | FOS_NOCHANGEDIR);
     dialog->SetFileTypes(static_cast<UINT>(std::size(kFilters)), kFilters);
-    dialog->SetTitle(L"选择壁纸 HTML 文件（建议自包含：CSS/JS 内联）");
+    dialog->SetTitle(tr("native.pickHtmlTitle").c_str());
 
     std::wstring path;
     if (SUCCEEDED(dialog->Show(owner))) {
@@ -120,7 +138,7 @@ std::string pick_folder(HWND owner) {
     dialog->GetOptions(&options);
     dialog->SetOptions(options | FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_PICKFOLDERS
                        | FOS_NOCHANGEDIR);
-    dialog->SetTitle(L"选择壁纸文件夹（根目录需包含 index.html）");
+    dialog->SetTitle(tr("native.pickFolderTitle").c_str());
 
     std::wstring path;
     if (SUCCEEDED(dialog->Show(owner))) {

@@ -1,0 +1,193 @@
+{
+  "_comment": "Single source of truth for every UI string. Add a language by adding its column to every entry and to languages.json. Both the settings panel (fetch) and the native Windows layer (config read at startup) load this file.",
+
+  "nav.wallpaper": { "zh": "壁纸", "en": "Wallpapers" },
+  "nav.params": { "zh": "参数", "en": "Params" },
+  "nav.settings": { "zh": "设置", "en": "Settings" },
+  "nav.about": { "zh": "关于", "en": "About" },
+
+  "app.title": { "zh": "Fleeting Light · 设置", "en": "Fleeting Light · Settings" },
+
+  "status.connecting": { "zh": "连接中…", "en": "Connecting…" },
+  "status.connected": { "zh": "已连接", "en": "Connected" },
+  "status.preview": { "zh": "未连接（预览模式）", "en": "Not connected (preview)" },
+  "status.running": { "zh": "运行中", "en": "Running" },
+  "status.paused": { "zh": "已暂停", "en": "Paused" },
+
+  "btn.disable": { "zh": "禁用", "en": "Disable" },
+  "btn.enable": { "zh": "启用", "en": "Enable" },
+
+  "wallpaper.title": { "zh": "壁纸", "en": "Wallpapers" },
+  "wallpaper.add": { "zh": "＋ 添加壁纸", "en": "+ Add wallpaper" },
+  "wallpaper.importFile": { "zh": "导入 HTML 文件…", "en": "Import HTML file…" },
+  "wallpaper.importFolder": { "zh": "导入文件夹（构建产物）…", "en": "Import folder (build output)…" },
+  "wallpaper.builtin": { "zh": "内置壁纸", "en": "Built-in" },
+  "wallpaper.mine": { "zh": "我的壁纸", "en": "My wallpapers" },
+  "wallpaper.active": { "zh": "使用中", "en": "Active" },
+  "wallpaper.remove": { "zh": "移除", "en": "Remove" },
+  "wallpaper.note.before": { "zh": "导入的壁纸放在", "en": "Imported wallpapers live in" },
+  "wallpaper.note.after": {
+    "zh": "，单文件 HTML 建议把 CSS/JS 内联，文件夹需要根目录下有 index.html。",
+    "en": ". Inline CSS/JS for single-file imports; folders need an index.html at their root."
+  },
+
+  "params.title": { "zh": "渲染", "en": "Rendering" },
+  "params.fps": { "zh": "帧率上限", "en": "Frame rate cap" },
+  "params.fpsHint": {
+    "zh": "不限 = 跟随显示器刷新率；也可以自己填 1–240",
+    "en": "Unlimited = follow the display; or type any value from 1 to 240"
+  },
+  "params.unlimited": { "zh": "不限", "en": "Unlimited" },
+  "params.customPlaceholder": { "zh": "自定义", "en": "Custom" },
+  "params.customTitle": {
+    "zh": "自定义帧率上限（1–240），回车或失焦生效",
+    "en": "Custom frame cap (1–240), applied on Enter or blur"
+  },
+  "params.speed": { "zh": "流动速度", "en": "Speed" },
+  "params.intensity": { "zh": "画面强度", "en": "Intensity" },
+  "params.density": { "zh": "元素密度", "en": "Density" },
+  "params.densityHint": { "zh": "粒子 / 光斑 / 字符列的数量", "en": "Particles / bokeh orbs / glyph columns" },
+  "params.note": {
+    "zh": "三个参数对所有壁纸生效，改动立即应用并写入 config.json。",
+    "en": "All three apply to every wallpaper, take effect immediately and are saved to config.json."
+  },
+
+  "settings.title": { "zh": "界面", "en": "Interface" },
+  "settings.language": { "zh": "界面语言", "en": "Language" },
+  "settings.languageHint": { "zh": "默认跟随系统语言", "en": "Defaults to your system language" },
+  "settings.power": { "zh": "省电", "en": "Power saving" },
+  "settings.pauseFullscreen": { "zh": "全屏应用时暂停", "en": "Pause in fullscreen apps" },
+  "settings.pauseFullscreenHint": {
+    "zh": "检测到全屏游戏 / 视频时停止渲染",
+    "en": "Stop rendering while a game or video is fullscreen"
+  },
+  "settings.pauseLock": { "zh": "锁屏时暂停", "en": "Pause when locked" },
+  "settings.pauseLockHint": { "zh": "息屏 / 锁屏后释放 GPU", "en": "Release the GPU when the screen is off or locked" },
+  "settings.pauseCovered": { "zh": "窗口最大化时暂停", "en": "Pause when a window is maximized" },
+  "settings.pauseCoveredHint": {
+    "zh": "有最大化窗口盖住桌面时停止渲染",
+    "en": "Stop rendering while a maximized window covers the desktop"
+  },
+  "settings.pausePanel": { "zh": "打开设置面板时暂停", "en": "Pause while this panel is open" },
+  "settings.pausePanelHint": {
+    "zh": "默认关闭，仅降低帧率",
+    "en": "Off by default; the wallpaper only drops to 30 fps"
+  },
+  "settings.interaction": { "zh": "互动", "en": "Interaction" },
+  "settings.pointer": { "zh": "壁纸跟随鼠标", "en": "Stream the cursor to the wallpaper" },
+  "settings.pointerHint": {
+    "zh": "把光标位置推给壁纸页面，视差 / 追光 / 交互要用它",
+    "en": "Parallax, cursor glow and other effects rely on it"
+  },
+  "settings.startup": { "zh": "启动", "en": "Startup" },
+  "settings.autostart": { "zh": "开机自启", "en": "Start with Windows" },
+  "settings.autostartHint": {
+    "zh": "登录时自动启动，写入 HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+    "en": "Written to HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+  },
+  "settings.devtools": { "zh": "启用开发者工具", "en": "Enable developer tools" },
+  "settings.devtoolsHint": { "zh": "下次创建视图时生效", "en": "Applies the next time a view is created" },
+
+  "about.title": { "zh": "运行信息", "en": "Runtime info" },
+  "about.fps": { "zh": "实时帧率", "en": "Live frame rate" },
+  "about.fpsHint": {
+    "zh": "壁纸页面每 2 秒上报一次；60 表示满帧，掉到 50 以下说明真的在丢帧",
+    "en": "Reported every 2 seconds; 60 is a full frame, below 50 means real drops"
+  },
+  "about.draw": { "zh": "绘制", "en": "draw" },
+  "about.actions": { "zh": "操作", "en": "Actions" },
+  "about.wallpaperDevtools": { "zh": "壁纸开发者工具", "en": "Wallpaper DevTools" },
+  "about.wallpaperDevtoolsHint": { "zh": "调试当前壁纸页面", "en": "Debug the current wallpaper page" },
+  "about.open": { "zh": "打开", "en": "Open" },
+  "about.note": {
+    "zh": "壁纸页面与设置面板共用一套桥接接口：bridge.send(json) / bridge.onMessage(cb)。",
+    "en": "Both views share one bridge API: bridge.send(json) / bridge.onMessage(cb)."
+  },
+
+  "info.version": { "zh": "版本", "en": "Version" },
+  "info.platform": { "zh": "平台", "en": "Platform" },
+  "info.config": { "zh": "配置文件", "en": "Config file" },
+  "info.data": { "zh": "数据目录", "en": "Data directory" },
+  "info.resources": { "zh": "资源目录", "en": "Resources" },
+
+  "footer.reset": { "zh": "恢复默认", "en": "Reset to defaults" },
+  "footer.reload": { "zh": "重启壁纸", "en": "Restart wallpaper" },
+  "footer.datadir": { "zh": "打开配置目录", "en": "Open config folder" },
+  "footer.quit": { "zh": "退出程序", "en": "Quit" },
+
+  "pause.disabled": { "zh": "已禁用，桌面背景已恢复", "en": "Disabled — desktop background restored" },
+  "pause.fullscreen": { "zh": "全屏遮挡，暂停中", "en": "Fullscreen app, paused" },
+  "pause.lock": { "zh": "锁屏，暂停中", "en": "Locked, paused" },
+  "pause.suspend": { "zh": "系统休眠，暂停中", "en": "Suspended, paused" },
+  "pause.settings": { "zh": "设置面板打开，暂停中", "en": "Settings open, paused" },
+
+  "toast.saved": { "zh": "设置已保存", "en": "Settings saved" },
+  "toast.reset": { "zh": "已恢复默认设置", "en": "Defaults restored" },
+  "toast.enabled": { "zh": "壁纸已启用", "en": "Wallpaper enabled" },
+  "toast.disabled": { "zh": "壁纸已禁用，桌面背景已恢复", "en": "Wallpaper disabled — desktop restored" },
+  "toast.removed": { "zh": "已移除壁纸", "en": "Wallpaper removed" },
+  "toast.reloaded": { "zh": "壁纸已重启", "en": "Wallpaper restarted" },
+  "toast.autostartOn": { "zh": "已设置开机自启", "en": "Autostart enabled" },
+  "toast.autostartOff": { "zh": "已取消开机自启", "en": "Autostart disabled" },
+  "toast.videoAdded": { "zh": "视频壁纸已添加", "en": "Video wallpaper added" },
+  "toast.nameTaken": {
+    "zh": "同名壁纸已存在，请先移除或改名",
+    "en": "A wallpaper with that name already exists — remove or rename it first"
+  },
+  "toast.noIndex": {
+    "zh": "这个文件夹里没有 index.html，请选网页构建产物的根目录",
+    "en": "That folder has no index.html — pick the root of a web build"
+  },
+  "toast.builtinReadonly": { "zh": "内置壁纸不能移除", "en": "Built-in wallpapers cannot be removed" },
+  "toast.badId": { "zh": "壁纸 id 非法", "en": "Invalid wallpaper id" },
+  "toast.badPatch": { "zh": "配置补丁格式错误", "en": "Malformed config patch" },
+  "toast.addedPrefix": { "zh": "已添加壁纸：", "en": "Wallpaper added: " },
+  "toast.resetFailed": { "zh": "重置失败: ", "en": "Reset failed: " },
+  "toast.saveFailed": { "zh": "保存配置失败: ", "en": "Could not save the config: " },
+  "toast.copyFileFailed": { "zh": "复制文件失败：", "en": "Could not copy the file: " },
+  "toast.copyFolderFailed": { "zh": "复制文件夹失败：", "en": "Could not copy the folder: " },
+  "toast.copyVideoFailed": { "zh": "复制视频失败：", "en": "Could not copy the video: " },
+  "toast.copyTemplateFailed": { "zh": "复制播放框架失败：", "en": "Could not copy the player template: " },
+  "toast.writePageFailed": { "zh": "写入播放页失败：", "en": "Could not write the player page: " },
+  "toast.removeFailed": { "zh": "移除失败：", "en": "Could not remove: " },
+  "toast.mkdirFailed": { "zh": "无法创建壁纸目录：", "en": "Could not create the wallpaper folder: " },
+
+  "tray.settings": { "zh": "打开设置面板\\tCtrl+Alt+F9", "en": "Open settings\\tCtrl+Alt+F9" },
+  "tray.showWallpaper": { "zh": "显示壁纸", "en": "Show wallpaper" },
+  "tray.reload": { "zh": "重新加载壁纸", "en": "Reload wallpaper" },
+  "tray.devtools": { "zh": "壁纸开发者工具", "en": "Wallpaper DevTools" },
+  "tray.autostart": { "zh": "开机自启", "en": "Start with Windows" },
+  "tray.dataDir": { "zh": "打开配置目录", "en": "Open config folder" },
+  "tray.quit": { "zh": "退出", "en": "Quit" },
+
+  "tooltip.running": { "zh": " · 运行中", "en": " · Running" },
+  "tooltip.disabled": { "zh": " · 已禁用", "en": " · Disabled" },
+  "tooltip.fullscreen": { "zh": " · 全屏遮挡，暂停中", "en": " · Fullscreen app, paused" },
+  "tooltip.lock": { "zh": " · 锁屏，暂停中", "en": " · Locked, paused" },
+  "tooltip.suspend": { "zh": " · 休眠，暂停中", "en": " · Suspended, paused" },
+  "tooltip.paused": { "zh": " · 暂停中", "en": " · Paused" },
+
+  "native.settingsTitle": { "zh": "Fleeting Light · 设置", "en": "Fleeting Light · Settings" },
+  "native.pickFileTitle": {
+    "zh": "选择壁纸文件（网页或视频）",
+    "en": "Choose a wallpaper file (web page or video)"
+  },
+  "native.pickFolderTitle": {
+    "zh": "选择壁纸文件夹（根目录需包含 index.html）",
+    "en": "Choose a wallpaper folder (must contain index.html at its root)"
+  },
+  "native.pickHtmlTitle": {
+    "zh": "选择壁纸 HTML 文件（建议自包含：CSS/JS 内联）",
+    "en": "Choose an HTML wallpaper (inline its CSS/JS if possible)"
+  },
+  "native.filterAll": { "zh": "所有文件 (*.*)", "en": "All files (*.*)" },
+  "native.filterWallpaper": {
+    "zh": "壁纸文件 (*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv)",
+    "en": "Wallpaper files (*.html;*.htm;*.mp4;*.webm;*.mov;*.m4v;*.mkv)"
+  },
+  "native.noMainWindow": { "zh": "无法创建主窗口", "en": "Could not create the main window" },
+  "native.needRuntime": {
+    "zh": "请安装 Microsoft Edge WebView2 运行时后重试",
+    "en": "Please install the Microsoft Edge WebView2 Runtime and try again"
+  }
+}
