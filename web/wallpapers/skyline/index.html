@@ -51,7 +51,15 @@
       pointer-events: none;
       background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(2, 5, 16, 0.42) 100%);
     }
-  </style>
+  
+      /* 暂停时连 CSS 动画一起停：只停 rAF 的话合成器还在每帧跑，GPU 占用降不下来 */
+      html.fl-paused *,
+      html.fl-paused *::before,
+      html.fl-paused *::after {
+        animation-play-state: paused !important;
+        transition: none !important;
+      }
+</style>
 </head>
 <body>
   <div id="wallpaper-stage">
@@ -595,6 +603,21 @@
 
           if (message.type === 'config' || message.type === 'init') {
             applyConfig(message.config);
+            return;
+          }
+
+          // 暂停：停掉动画帧，并把 CSS 动画一起挂起
+          if (message.type === 'state') {
+            const paused = message.paused === true;
+            document.documentElement.classList.toggle('fl-paused', paused);
+            if (paused) {
+              if (rafId) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+              }
+            } else if (!rafId && !document.hidden) {
+              rafId = requestAnimationFrame(render);
+            }
             return;
           }
 

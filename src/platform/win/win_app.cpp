@@ -1,4 +1,4 @@
-#include "platform/win/win_app.h"
+﻿#include "platform/win/win_app.h"
 
 #include <shellapi.h>
 #include <shlobj.h>
@@ -56,46 +56,57 @@ bool query_fullscreen_state() {
     }
 }
 
-// 桌面被窗口完全盖住了吗？壁纸挂在 WorkerW 最底层，只要前面有窗口铺满桌面就看不见。
-// 注意：只用来省电，且轮询间隔要短 —— 误判或恢复太慢都会被用户感知成"壁纸卡住了"。
-bool desktop_is_covered() {
-    HWND foreground = GetForegroundWindow();
-    if (!foreground) {
-        return false;
-    }
-    if (foreground == GetShellWindow()) {
-        return false;  // 焦点在桌面本身
-    }
-    if (!IsWindowVisible(foreground)) {
-        return false;
-    }
-    if (IsIconic(foreground)) {
-        return false;
-    }
+// 是否有窗口处于最大化并盖住了工作区。
+// 遍历所有顶层窗口（不只看前台）：只要有一个最大化的窗口，桌面就露出不来了。
+bool any_window_maximized() {
+    struct Context {
+        bool found = false;
+    } context;
 
-    WINDOWPLACEMENT placement{};
-    placement.length = sizeof(placement);
-    if (!GetWindowPlacement(foreground, &placement)) {
-        return false;
-    }
-    if (placement.showCmd != SW_SHOWMAXIMIZED) {
-        return false;
-    }
+    EnumWindows(
+        [](HWND hwnd, LPARAM param) -> BOOL {
+            auto* ctx = reinterpret_cast<Context*>(param);
 
-    RECT windowRect{};
-    if (!GetWindowRect(foreground, &windowRect)) {
-        return false;
-    }
-    HMONITOR monitor = MonitorFromWindow(foreground, MONITOR_DEFAULTTONEAREST);
-    MONITORINFO info{};
-    info.cbSize = sizeof(info);
-    if (!GetMonitorInfoW(monitor, &info)) {
-        return false;
-    }
+            if (!IsWindowVisible(hwnd) || IsIconic(hwnd)) {
+                return TRUE;
+            }
+            // 跳过工具窗口 / 归属窗口，它们不是用户眼里的"程序"
+            if (GetWindow(hwnd, GW_OWNER) != nullptr) {
+                return TRUE;
+            }
+            WINDOWPLACEMENT placement{};
+            placement.length = sizeof(placement);
+            if (!GetWindowPlacement(hwnd, &placement)) {
+                return TRUE;
+            }
+            if (placement.showCmd != SW_SHOWMAXIMIZED) {
+                return TRUE;
+            }
 
-    const RECT& screen = info.rcMonitor;
-    return windowRect.left <= screen.left && windowRect.top <= screen.top
-        && windowRect.right >= screen.right && windowRect.bottom >= screen.bottom;
+            RECT window_rect{};
+            if (!GetWindowRect(hwnd, &window_rect)) {
+                return TRUE;
+            }
+
+            HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+            MONITORINFO info{};
+            info.cbSize = sizeof(info);
+            if (!GetMonitorInfoW(monitor, &info)) {
+                return TRUE;
+            }
+
+            // 最大化窗口会避开任务栏，所以按工作区比而不是整个显示器
+            const RECT& area = info.rcWork;
+            if (window_rect.left <= area.left && window_rect.top <= area.top &&
+                window_rect.right >= area.right && window_rect.bottom >= area.bottom) {
+                ctx->found = true;
+                return FALSE;   // 找到一个就够了
+            }
+            return TRUE;
+        },
+        reinterpret_cast<LPARAM>(&context));
+
+    return context.found;
 }
 
 std::wstring tooltip_for(const core::App& core) {
@@ -707,12 +718,14 @@ void WinApp::request_import_wallpaper(bool folder) {
 void WinApp::poll_fullscreen() {
     // 全屏应用和"桌面被最大化窗口盖住"对壁纸来说是一回事：看不见了。
     // 后者更常见（日常开着浏览器/编辑器干活），不处理的话壁纸会一直在后台满速渲染。
-    const bool hidden = query_fullscreen_state() || desktop_is_covered();
+    const bool covered_pause =
+        core_.config().get_path("app.pauseWhenCovered").as_bool(true) && any_window_maximized();
+    const bool hidden = query_fullscreen_state() || covered_pause;
     if (hidden == last_fullscreen_) {
         return;
     }
     last_fullscreen_ = hidden;
-    log_info(hidden ? "壁纸不可见，暂停渲染" : "壁纸可见，恢复渲染");
+    log_info(hidden ? "有窗口最大化或全屏，暂停渲染" : "窗口恢复，继续渲染");
     core_.on_fullscreen_changed(hidden);
 }
 

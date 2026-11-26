@@ -261,6 +261,7 @@ function renderSwitches() {
   const app = (view.config && view.config.app) || {};
   setSwitch($('#pauseOnFullscreen'), app.pauseOnFullscreen !== false);
   setSwitch($('#pauseOnLock'), app.pauseOnLock !== false);
+  setSwitch($('#pauseWhenCovered'), app.pauseWhenCovered !== false);
   setSwitch($('#pauseWhenSettingsOpen'), app.pauseWhenSettingsOpen === true);
   setSwitch($('#startWithWindows'), app.startWithWindows === true);
   setSwitch($('#devTools'), app.devTools === true);
@@ -432,6 +433,7 @@ function bindEvents() {
   const switchBindings = [
     ['#pauseOnFullscreen', 'app', 'pauseOnFullscreen'],
     ['#pauseOnLock', 'app', 'pauseOnLock'],
+    ['#pauseWhenCovered', 'app', 'pauseWhenCovered'],
     ['#pauseWhenSettingsOpen', 'app', 'pauseWhenSettingsOpen'],
     ['#startWithWindows', 'app', 'startWithWindows'],
     ['#devTools', 'app', 'devTools'],

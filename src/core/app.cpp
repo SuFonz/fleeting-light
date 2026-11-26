@@ -325,7 +325,9 @@ void App::recompute_state() {
     pause_reason_      = reason;
 
     // 被用户禁用时壁纸要彻底消失（露出桌面），其余情况只是停渲染
-    const bool should_suspend = paused;
+    // 只有用户手动禁用才隐藏视图（露出桌面背景）；
+    // 全屏 / 锁屏 / 最大化这些自动暂停只停渲染、保留最后一帧，切换时才不突兀
+    const bool should_suspend = paused && reason == "disabled";
     if (should_suspend != suspended_) {
         suspended_ = should_suspend;
         apply_suspension();

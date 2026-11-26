@@ -18,6 +18,7 @@ const Json& ConfigCenter::defaults() {
         j["app"]["startWithWindows"]      = false;
         j["app"]["pauseOnFullscreen"]     = true;
         j["app"]["pauseOnLock"]           = true;
+        j["app"]["pauseWhenCovered"]  = true;
         j["app"]["pauseWhenSettingsOpen"] = false;
         j["app"]["devTools"]              = false;
         j["app"]["pointerTracking"]       = true;

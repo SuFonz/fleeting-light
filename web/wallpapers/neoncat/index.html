@@ -56,6 +56,14 @@ body{font-family:system-ui,sans-serif;cursor:none;user-select:none}
 25%{transform:translate(2%,-1%)}50%{transform:translate(-1%,2%)}75%{transform:translate(1%,1%)}100%{transform:translate(-2%,-1%)}}
 @media(max-width:700px){#art{object-position:58% center}#holo{width:34%;height:25%;top:31%}#holo2{width:24%;height:16%}#drone{left:34%;top:38%}body{cursor:auto}#cursor{display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:30s!important;transition:none!important}}
+
+      /* 暂停时连 CSS 动画一起停：只停 rAF 的话合成器还在每帧跑，GPU 占用降不下来 */
+      html.fl-paused *,
+      html.fl-paused *::before,
+      html.fl-paused *::after {
+        animation-play-state: paused !important;
+        transition: none !important;
+      }
 </style>
 </head>
 <body>
@@ -319,6 +327,7 @@ body{font-family:system-ui,sans-serif;cursor:none;user-select:none}
      }
 
      if(message.type==='state'){
+       document.documentElement.classList.toggle('fl-paused',message.paused===true);
        if(message.paused){
          if(raf){cancelAnimationFrame(raf);raf=0}
        }else if(!raf&&!document.hidden){
