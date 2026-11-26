@@ -55,13 +55,9 @@
       name: 'webview',
       send: (text) => global.ipc.postMessage(text),
     };
-  } else if (global.external && typeof global.external.notify === 'function') {
-    global.addEventListener('message', (event) => dispatch(event.data));
-    transport = {
-      name: 'webview-external',
-      send: (text) => global.external.notify(text),
-    };
   }
+  // window.external（XAML WebView 那条路）已从 Chromium 弃用，本项目也用不到它。
+  // 将来真要接，在这里加一个分支即可。
 
   global.bridge = {
     send,

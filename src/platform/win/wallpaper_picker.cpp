@@ -58,7 +58,9 @@ std::wstring pick_html_file_fallback(HWND owner) {
     ofn.lpstrFile   = buffer;
     ofn.nMaxFile    = static_cast<DWORD>(std::size(buffer));
     ofn.lpstrFilter = filter.c_str();
-    ofn.lpstrTitle  = tr("native.pickFileTitle").c_str();
+    // 必须活到 GetOpenFileNameW 返回，不能指向临时对象
+    const std::wstring file_title = tr("native.pickFileTitle");
+    ofn.lpstrTitle = file_title.c_str();
     ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_EXPLORER | OFN_NOCHANGEDIR;
     ofn.lpstrDefExt = L"html";
     if (!GetOpenFileNameW(&ofn)) {
@@ -70,7 +72,9 @@ std::wstring pick_html_file_fallback(HWND owner) {
 std::wstring pick_folder_fallback(HWND owner) {
     BROWSEINFOW info{};
     info.hwndOwner      = owner;
-    info.lpszTitle      = tr("native.pickFolderTitle").c_str();
+    // 同上：临时对象会在这一句结束时就析构
+    const std::wstring folder_title = tr("native.pickFolderTitle");
+    info.lpszTitle      = folder_title.c_str();
     info.ulFlags        = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
     PIDLIST_ABSOLUTE id = SHBrowseForFolderW(&info);
     if (!id) {
