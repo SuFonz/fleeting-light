@@ -1,12 +1,15 @@
 // 设置面板：只做三件事——渲染状态、把用户操作发出去、把主进程回来的状态画上去。
+import { setLanguage, language, t, applyI18n } from './i18n.js';
+import { translateToast } from './toast-text.js';
+
 const bridge = window.bridge;
 
 const PAUSE_REASON_TEXT = {
-  disabled: '已禁用，桌面背景已恢复',
-  fullscreen: '全屏遮挡，暂停中',
-  lock: '锁屏，暂停中',
-  suspend: '系统休眠，暂停中',
-  settings: '设置面板打开，暂停中',
+  disabled: 'pause.disabled',
+  fullscreen: 'pause.fullscreen',
+  lock: 'pause.lock',
+  suspend: 'pause.suspend',
+  settings: 'pause.settings',
 };
 
 const view = {
@@ -136,7 +139,7 @@ function createWallpaperRow(item, activeId) {
   if (item.user) {
     const remove = document.createElement('span');
     remove.className = 'wp-remove';
-    remove.textContent = '移除';
+    remove.textContent = t('wallpaper.remove');
     remove.addEventListener('click', (event) => {
       event.stopPropagation();
       const label = item.name || item.id;
@@ -268,6 +271,17 @@ function renderSwitches() {
   setSwitch($('#pointerTracking'), app.pointerTracking !== false);
 }
 
+function renderLanguage() {
+  const app = (view.config && view.config.app) || {};
+  const id = typeof app.language === 'string' ? app.language : 'auto';
+  setLanguage(id);
+  const select = $('#languageSelect');
+  if (select) {
+    select.value = id;
+  }
+  applyI18n();
+}
+
 function renderStatus() {
   const pill = $('#statusPill');
   const text = $('#statusText');
@@ -278,18 +292,20 @@ function renderStatus() {
 
   if (!status) {
     pill.classList.add('offline');
-    text.textContent = bridge && bridge.connected ? '已连接' : '未连接（预览模式）';
-    button.textContent = '禁用';
+    text.textContent = bridge && bridge.connected ? t('status.connected') : t('status.preview');
+    button.textContent = t('btn.disable');
     return;
   }
 
   if (status.paused) {
     pill.classList.add('paused');
-    text.textContent = PAUSE_REASON_TEXT[status.reason] || '已暂停';
+    text.textContent = PAUSE_REASON_TEXT[status.reason]
+      ? t(PAUSE_REASON_TEXT[status.reason])
+      : t('status.paused');
   } else {
-    text.textContent = '运行中';
+    text.textContent = t('status.running');
   }
-  button.textContent = status.enabled === false ? '启用' : '禁用';
+  button.textContent = status.enabled === false ? t('btn.enable') : t('btn.disable');
 }
 
 function renderInfo() {
@@ -300,12 +316,12 @@ function renderInfo() {
   $('#versionLabel').textContent = 'v' + (info.version || '—');
 
   const rows = [
-    ['版本', info.version || '—'],
-    ['平台', info.platform || '—'],
+    [t('info.version'), info.version || '—'],
     ['WebView2', info.webview || '—'],
-    ['配置文件', info.configPath || '—'],
-    ['数据目录', info.dataDir || '—'],
-    ['资源目录', info.webRoot || '—'],
+    [t('info.platform'), info.platform || '—'],
+    [t('info.config'), info.configPath || '—'],
+    [t('info.data'), info.dataDir || '—'],
+    [t('info.resources'), info.webRoot || '—'],
   ];
 
   const list = $('#infoList');
@@ -430,6 +446,19 @@ function bindEvents() {
     queuePatch({ wallpaper: { params: { density: value } } });
   });
 
+  const languageSelect = $('#languageSelect');
+  if (languageSelect) {
+    languageSelect.addEventListener('change', () => {
+      setLanguage(languageSelect.value);
+      applyI18n();
+      renderWallpapers();
+      renderParams();
+      renderStatus();
+      renderInfo();
+      queuePatch({ app: { language: languageSelect.value } });
+    });
+  }
+
   const switchBindings = [
     ['#pauseOnFullscreen', 'app', 'pauseOnFullscreen'],
     ['#pauseOnLock', 'app', 'pauseOnLock'],
@@ -482,6 +511,7 @@ function handleMessage(message) {
       view.config = message.config || view.config;
       view.info = message.info || view.info;
       view.status = message.state || view.status;
+      renderLanguage();
       renderWallpapers();
       renderParams();
       renderSwitches();
@@ -491,9 +521,12 @@ function handleMessage(message) {
 
     case 'config':
       view.config = message.config || view.config;
+      renderLanguage();
       renderWallpapers();
       renderParams();
       renderSwitches();
+      renderStatus();
+      renderInfo();
       break;
 
     case 'state':
@@ -506,7 +539,7 @@ function handleMessage(message) {
       if (node) {
         const fps = Number(message.fps) || 0;
         const drawMs = Number(message.drawMs) || 0;
-        node.textContent = `${fps.toFixed(1)} fps · 绘制 ${drawMs.toFixed(2)} ms`;
+        node.textContent = `${fps.toFixed(1)} fps · ${t('about.draw')} ${drawMs.toFixed(2)} ms`;
         // 低于 50 帧标红，一眼看出是否真掉帧
         node.classList.toggle('warn', fps > 0 && fps < 50);
       }
@@ -514,7 +547,7 @@ function handleMessage(message) {
     }
 
     case 'toast':
-      toast(message.message || '', message.level);
+      toast(translateToast(message.message || '', language()), message.level);
       break;
 
     default:

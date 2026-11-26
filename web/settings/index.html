@@ -15,64 +15,64 @@
         <span class="brand-version" id="versionLabel"></span>
       </div>
       <div class="topbar-right">
-        <span class="status" id="statusPill"><span class="status-dot"></span><span id="statusText">连接中…</span></span>
-        <button class="ghost" id="pauseButton" type="button">禁用</button>
+        <span class="status" id="statusPill"><span class="status-dot"></span><span id="statusText" data-i18n="status.connecting">连接中…</span></span>
+        <button class="ghost" id="pauseButton" type="button" data-i18n="btn.disable">禁用</button>
       </div>
     </header>
 
     <div class="shell">
       <nav class="sidenav" id="sidenav">
-        <button class="nav-item active" data-pane="wallpaper" type="button">壁纸</button>
-        <button class="nav-item" data-pane="params" type="button">参数</button>
-        <button class="nav-item" data-pane="behavior" type="button">行为</button>
-        <button class="nav-item" data-pane="about" type="button">关于</button>
+        <button class="nav-item active" data-pane="wallpaper" type="button" data-i18n="nav.wallpaper">壁纸</button>
+        <button class="nav-item" data-pane="params" type="button" data-i18n="nav.params">参数</button>
+        <button class="nav-item" data-pane="behavior" type="button" data-i18n="nav.settings">设置</button>
+        <button class="nav-item" data-pane="about" type="button" data-i18n="nav.about">关于</button>
       </nav>
 
       <main class="content">
         <section class="pane active" id="pane-wallpaper">
           <div class="pane-head">
-            <h1>壁纸</h1>
+            <h1 data-i18n="wallpaper.title">壁纸</h1>
             <div class="add-wrap">
-              <button class="ghost" id="addWallpaperButton" type="button">＋ 添加壁纸</button>
+              <button class="ghost" id="addWallpaperButton" type="button" data-i18n="wallpaper.add">＋ 添加壁纸</button>
               <div class="menu" id="addWallpaperMenu" hidden>
-                <button type="button" data-kind="file">导入 HTML 文件…</button>
-                <button type="button" data-kind="folder">导入文件夹（构建产物）…</button>
+                <button type="button" data-kind="file" data-i18n="wallpaper.importFile">导入 HTML 文件…</button>
+                <button type="button" data-kind="folder" data-i18n="wallpaper.importFolder">导入文件夹（构建产物）…</button>
               </div>
             </div>
           </div>
           <div class="rule"></div>
 
           <div class="wp-group">
-            <h2 class="group-title">内置壁纸</h2>
+            <h2 class="group-title" data-i18n="wallpaper.builtin">内置壁纸</h2>
             <div class="wp-list" id="builtinList"></div>
           </div>
 
           <div class="wp-group" id="userGroup" hidden>
-            <h2 class="group-title">我的壁纸</h2>
+            <h2 class="group-title" data-i18n="wallpaper.mine">我的壁纸</h2>
             <div class="wp-list" id="userList"></div>
           </div>
 
           <p class="note">
-            导入的壁纸放在 <code id="userDirHint">…</code>，单文件 HTML 建议把 CSS/JS 内联，文件夹需要根目录下有
-            <code>index.html</code>。
+            <span data-i18n="wallpaper.note.before">导入的壁纸放在</span>
+            <code id="userDirHint">…</code><span data-i18n="wallpaper.note.after">，单文件 HTML 建议把 CSS/JS 内联，文件夹需要根目录下有 index.html。</span>
           </p>
         </section>
 
         <section class="pane" id="pane-params">
-          <h1>渲染</h1>
+          <h1 data-i18n="params.title">渲染</h1>
           <div class="rule"></div>
 
           <div class="row">
             <div class="row-label">
-              帧率上限
-              <span class="hint">不限 = 跟随显示器刷新率；也可以自己填 1–240</span>
+              <span data-i18n="params.fps">帧率上限</span>
+              <span class="hint" data-i18n="params.fpsHint">不限 = 跟随显示器刷新率；也可以自己填 1–240</span>
             </div>
             <div class="row-side fps-side">
               <div class="segmented" id="fpsGroup">
                 <button type="button" data-fps="30">30</button>
                 <button type="button" data-fps="60">60</button>
                 <button type="button" data-fps="120">120</button>
-                <button type="button" data-fps="0">不限</button>
+                <button type="button" data-fps="0" data-i18n="params.unlimited">不限</button>
               </div>
               <input
                 type="number"
@@ -83,25 +83,27 @@
                 step="1"
                 inputmode="numeric"
                 placeholder="自定义"
+                data-i18n-placeholder="params.customPlaceholder"
                 title="自定义帧率上限（1–240），回车或失焦生效"
+                data-i18n-title="params.customTitle"
               />
             </div>
           </div>
 
           <div class="row">
-            <div class="row-label inline">流动速度<span class="value" id="speedValue">1.0×</span></div>
+            <div class="row-label inline"><span data-i18n="params.speed">流动速度</span><span class="value" id="speedValue">1.0×</span></div>
             <input type="range" id="speedRange" min="0.2" max="2.5" step="0.1" value="1" />
           </div>
 
           <div class="row">
-            <div class="row-label inline">画面强度<span class="value" id="intensityValue">1.0</span></div>
+            <div class="row-label inline"><span data-i18n="params.intensity">画面强度</span><span class="value" id="intensityValue">1.0</span></div>
             <input type="range" id="intensityRange" min="0.3" max="1.8" step="0.1" value="1" />
           </div>
 
           <div class="row">
             <div class="row-label">
-              元素密度
-              <span class="hint">粒子 / 光斑 / 字符列的数量</span>
+              <span data-i18n="params.density">元素密度</span>
+              <span class="hint" data-i18n="params.densityHint">粒子 / 光斑 / 字符列的数量</span>
             </div>
             <div class="row-side">
               <span class="value" id="densityValue">1.0</span>
@@ -109,98 +111,115 @@
             </div>
           </div>
 
-          <p class="note">三个参数对所有壁纸生效，改动立即应用并写入 config.json。</p>
+          <p class="note" data-i18n="params.note">三个参数对所有壁纸生效，改动立即应用并写入 config.json。</p>
         </section>
 
         <section class="pane" id="pane-behavior">
-          <h1>省电</h1>
+          <h1 data-i18n="settings.title">界面</h1>
           <div class="rule"></div>
 
           <div class="row">
             <div class="row-label">
-              全屏应用时暂停
-              <span class="hint">检测到全屏游戏/视频时停止渲染</span>
+              <span data-i18n="settings.language">界面语言</span>
+              <span class="hint" data-i18n="settings.languageHint">默认跟随系统语言</span>
+            </div>
+            <div class="row-side">
+              <select class="select" id="languageSelect">
+                <option value="auto">System</option>
+                <option value="zh">中文</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+
+          <h1 class="gap" data-i18n="settings.power">省电</h1>
+          <div class="rule"></div>
+
+          <div class="row">
+            <div class="row-label">
+              <span data-i18n="settings.pauseFullscreen">全屏应用时暂停</span>
+              <span class="hint" data-i18n="settings.pauseFullscreenHint">检测到全屏游戏 / 视频时停止渲染</span>
             </div>
             <button class="switch" id="pauseOnFullscreen" type="button" role="switch" aria-checked="true"></button>
           </div>
 
           <div class="row">
             <div class="row-label">
-              锁屏时暂停
-              <span class="hint">息屏 / 锁屏后释放 GPU</span>
+              <span data-i18n="settings.pauseLock">锁屏时暂停</span>
+              <span class="hint" data-i18n="settings.pauseLockHint">息屏 / 锁屏后释放 GPU</span>
             </div>
             <button class="switch" id="pauseOnLock" type="button" role="switch" aria-checked="true"></button>
           </div>
 
-<div class="row">
+          <div class="row">
             <div class="row-label">
-              窗口最大化时暂停
-              <span class="hint">前台有最大化窗口盖住桌面时停止渲染</span>
+              <span data-i18n="settings.pauseCovered">窗口最大化时暂停</span>
+              <span class="hint" data-i18n="settings.pauseCoveredHint">有最大化窗口盖住桌面时停止渲染</span>
             </div>
             <button class="switch" id="pauseWhenCovered" type="button" role="switch" aria-checked="true"></button>
           </div>
 
           <div class="row">
             <div class="row-label">
-              打开设置面板时暂停
-              <span class="hint">默认关闭，仅降低帧率</span>
+              <span data-i18n="settings.pausePanel">打开设置面板时暂停</span>
+              <span class="hint" data-i18n="settings.pausePanelHint">默认关闭，仅降低帧率</span>
             </div>
             <button class="switch" id="pauseWhenSettingsOpen" type="button" role="switch" aria-checked="false"></button>
           </div>
 
-          <h1 class="gap">互动</h1>
+          <h1 class="gap" data-i18n="settings.interaction">互动</h1>
           <div class="rule"></div>
 
           <div class="row">
             <div class="row-label">
-              壁纸跟随鼠标
-              <span class="hint">把光标位置推给壁纸页面，涟漪 / 追光 / 群星要用它</span>
+              <span data-i18n="settings.pointer">壁纸跟随鼠标</span>
+              <span class="hint" data-i18n="settings.pointerHint">把光标位置推给壁纸页面，视差 / 追光 / 交互要用它</span>
             </div>
             <button class="switch" id="pointerTracking" type="button" role="switch" aria-checked="true"></button>
           </div>
 
-          <h1 class="gap">启动</h1>
+          <h1 class="gap" data-i18n="settings.startup">启动</h1>
           <div class="rule"></div>
 
           <div class="row">
             <div class="row-label">
-              开机自启
-              <span class="hint">登录时自动启动，写入 HKCU\Software\Microsoft\Windows\CurrentVersion\Run</span>
+              <span data-i18n="settings.autostart">开机自启</span>
+              <span class="hint" data-i18n="settings.autostartHint">登录时自动启动，写入 HKCU\Software\Microsoft\Windows\CurrentVersion\Run</span>
             </div>
             <button class="switch" id="startWithWindows" type="button" role="switch" aria-checked="false"></button>
           </div>
 
           <div class="row">
             <div class="row-label">
-              启用开发者工具
-              <span class="hint">下次创建视图时生效</span>
+              <span data-i18n="settings.devtools">启用开发者工具</span>
+              <span class="hint" data-i18n="settings.devtoolsHint">下次创建视图时生效</span>
             </div>
             <button class="switch" id="devTools" type="button" role="switch" aria-checked="false"></button>
           </div>
         </section>
 
         <section class="pane" id="pane-about">
-          <h1>运行信息</h1>
+          <h1 data-i18n="about.title">运行信息</h1>
           <div class="rule"></div>
           <dl class="info" id="infoList"></dl>
 
           <div class="row">
             <div class="row-label">
-              实时帧率
-              <span class="hint">壁纸页面每 2 秒上报一次；60 表示满帧，掉到 50 以下说明真的在丢帧</span>
+              <span data-i18n="about.fps">实时帧率</span>
+              <span class="hint" data-i18n="about.fpsHint">壁纸页面每 2 秒上报一次；60 表示满帧，掉到 50 以下说明真的在丢帧</span>
             </div>
             <div class="row-side">
               <span class="value" id="fpsValue">—</span>
             </div>
           </div>
 
-          <h1 class="gap">操作</h1>
+          <h1 class="gap" data-i18n="about.actions">操作</h1>
           <div class="rule"></div>
           <div class="row">
-            <div class="row-label">壁纸开发者工具<span class="hint">调试当前壁纸页面</span></div>
-            <button class="ghost" id="devtoolsButton" type="button">打开</button>
+            <div class="row-label"><span data-i18n="about.wallpaperDevtools">壁纸开发者工具</span><span class="hint" data-i18n="about.wallpaperDevtoolsHint">调试当前壁纸页面</span></div>
+            <button class="ghost" id="devtoolsButton" type="button" data-i18n="about.open">打开</button>
           </div>
-          <p class="note">
+          <p class="note" data-i18n="about.note">
             壁纸页面与设置面板共用一套桥接接口：<code>bridge.send(json)</code> / <code>bridge.onMessage(cb)</code>。
           </p>
         </section>
@@ -208,11 +227,11 @@
     </div>
 
     <footer class="bottombar">
-      <button class="ghost" id="resetButton" type="button">恢复默认</button>
-      <button class="ghost" id="reloadButton" type="button">重启壁纸</button>
-      <button class="ghost" id="dataDirButton" type="button">打开配置目录</button>
+      <button class="ghost" id="resetButton" type="button" data-i18n="footer.reset">恢复默认</button>
+      <button class="ghost" id="reloadButton" type="button" data-i18n="footer.reload">重启壁纸</button>
+      <button class="ghost" id="dataDirButton" type="button" data-i18n="footer.datadir">打开配置目录</button>
       <span class="spacer"></span>
-      <button class="ghost danger" id="quitButton" type="button">退出程序</button>
+      <button class="ghost danger" id="quitButton" type="button" data-i18n="footer.quit">退出程序</button>
     </footer>
 
     <div class="toast" id="toast"></div>
